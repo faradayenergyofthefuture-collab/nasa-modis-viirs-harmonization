@@ -968,3 +968,229 @@ else:
         st.success(
             "Analisis de sensibilidad completado."
         )
+
+# ============================================================
+# FASE 3 - RESULTADOS, VALIDACION Y CONCLUSIONES
+# NASA MODIS-VIIRS Harmonization
+# ============================================================
+
+st.divider()
+
+st.header("Fase 3 - Resultados y conclusiones")
+
+st.write(
+    "Esta sección resume los resultados del análisis "
+    "exploratorio de correspondencias entre MODIS y VIIRS."
+)
+
+st.info(
+    "Las correspondencias identificadas son candidatas. "
+    "No representan incendios confirmados ni una "
+    "validación independiente del algoritmo."
+)
+
+# ------------------------------------------------------------
+# 3.1 - RESUMEN DEL CASO DE ESTUDIO
+# ------------------------------------------------------------
+
+st.subheader("Caso de estudio: Durazno, Uruguay")
+
+st.write(
+    "Período de descarga NASA FIRMS: "
+    "13 al 17 de enero de 2023."
+)
+
+st.write(
+    "Las 28 detecciones seleccionadas en la región "
+    "corresponden al 15 de enero de 2023."
+)
+
+c1, c2, c3 = st.columns(3)
+
+c1.metric("MODIS", 11)
+c2.metric("VIIRS NOAA-20", 7)
+c3.metric("VIIRS S-NPP", 10)
+
+st.caption(
+    "Los valores corresponden a detecciones satelitales "
+    "de anomalías térmicas, no a incendios individuales."
+)
+
+# ------------------------------------------------------------
+# 3.2 - RESULTADOS DE REFERENCIA
+# ------------------------------------------------------------
+
+st.subheader("Comparación de escenarios")
+
+resumen_fase3 = pd.DataFrame([
+    {
+        "Distancia máxima (km)": 0.5,
+        "Tiempo máximo (min)": 30,
+        "Pares candidatos": 5
+    },
+    {
+        "Distancia máxima (km)": 1.0,
+        "Tiempo máximo (min)": 60,
+        "Pares candidatos": 24
+    },
+    {
+        "Distancia máxima (km)": 1.0,
+        "Tiempo máximo (min)": 180,
+        "Pares candidatos": 51
+    },
+    {
+        "Distancia máxima (km)": 2.0,
+        "Tiempo máximo (min)": 60,
+        "Pares candidatos": 26
+    },
+    {
+        "Distancia máxima (km)": 2.0,
+        "Tiempo máximo (min)": 180,
+        "Pares candidatos": 67
+    }
+])
+
+st.dataframe(
+    resumen_fase3,
+    use_container_width=True,
+    hide_index=True
+)
+
+st.caption(
+    "Valores de referencia obtenidos previamente "
+    "con el conjunto de datos de Durazno. "
+    "No son resultados calculados para nuevos archivos."
+)
+
+# ------------------------------------------------------------
+# 3.3 - INTERPRETACION CIENTIFICA
+# ------------------------------------------------------------
+
+st.subheader("¿Qué aprendimos?")
+
+st.markdown("""
+**1. Los satélites no producen detecciones idénticas.**
+
+MODIS y VIIRS poseen características instrumentales
+diferentes. Por eso, sus observaciones pueden variar
+en posición, cantidad y horario.
+
+**2. La ventana temporal influye en los resultados.**
+
+Al ampliar el tiempo permitido entre observaciones,
+aumenta la cantidad de pares candidatos.
+
+**3. La distancia también modifica las correspondencias.**
+
+Una tolerancia espacial mayor puede incorporar nuevas
+asociaciones, pero no garantiza que sean correctas.
+
+**4. Una correspondencia no equivale a un incendio.**
+
+Una detección puede participar en varios pares.
+Las asociaciones deben interpretarse con precaución.
+""")
+
+# ------------------------------------------------------------
+# 3.4 - ESTADO DE VALIDACION
+# ------------------------------------------------------------
+
+st.subheader("Estado de validación")
+
+estado_fase3 = pd.DataFrame([
+    {
+        "Actividad": "Lectura de datos NASA FIRMS",
+        "Estado": "Completada"
+    },
+    {
+        "Actividad": "Visualización geográfica",
+        "Estado": "Completada"
+    },
+    {
+        "Actividad": "Comparación espacial y temporal",
+        "Estado": "Completada"
+    },
+    {
+        "Actividad": "Análisis de sensibilidad",
+        "Estado": "Completada"
+    },
+    {
+        "Actividad": "Segundo caso de estudio",
+        "Estado": "Pendiente"
+    },
+    {
+        "Actividad": "Validación independiente",
+        "Estado": "Pendiente"
+    }
+])
+
+st.dataframe(
+    estado_fase3,
+    use_container_width=True,
+    hide_index=True
+)
+
+st.warning(
+    "Este prototipo todavía no permite estimar "
+    "precisión, sensibilidad ni tasa de falsos positivos "
+    "frente a incendios reales. Para ello se necesita "
+    "una referencia independiente."
+)
+
+# ------------------------------------------------------------
+# 3.5 - CONCLUSION
+# ------------------------------------------------------------
+
+st.subheader("Conclusión del estudio")
+
+conclusion_fase3 = (
+    "En el caso de estudio de Durazno, el algoritmo "
+    "permitió identificar correspondencias espaciales "
+    "y temporales candidatas entre detecciones MODIS "
+    "y VIIRS. El análisis de nueve escenarios mostró "
+    "que la cantidad de correspondencias depende de "
+    "los límites espaciales y temporales seleccionados, "
+    "especialmente de la ventana temporal. "
+    "Los resultados son exploratorios y requieren "
+    "validación independiente antes de establecer "
+    "el desempeño del método."
+)
+
+st.success(conclusion_fase3)
+
+# ------------------------------------------------------------
+# 3.6 - DESCARGAR INFORME
+# ------------------------------------------------------------
+
+st.subheader("Descargar informe")
+
+informe_fase3 = (
+    "NASA MODIS-VIIRS HARMONIZATION\n"
+    "INFORME EXPLORATORIO\n\n"
+    "Caso: Durazno, Uruguay\n"
+    "Fecha de detecciones: 15/01/2023\n\n"
+    "MODIS: 11 detecciones\n"
+    "VIIRS NOAA-20: 7 detecciones\n"
+    "VIIRS S-NPP: 10 detecciones\n"
+    "Total regional: 28 detecciones\n\n"
+    "RESULTADOS DE REFERENCIA\n"
+    + resumen_fase3.to_string(index=False)
+    + "\n\nCONCLUSION\n"
+    + conclusion_fase3
+    + "\n\nLIMITACIONES\n"
+    "Las correspondencias son candidatas.\n"
+    "No se identifican incendios confirmados.\n"
+    "No existe aún validación independiente.\n"
+)
+
+st.download_button(
+    label="Descargar informe del estudio",
+    data=informe_fase3.encode("utf-8-sig"),
+    file_name="informe_modis_viirs_durazno.txt",
+    mime="text/plain"
+)
+
+st.caption(
+    "Prototipo de investigación y armonización "
+    "exploratoria de detecciones satelitales."
+)
