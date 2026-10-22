@@ -220,6 +220,8 @@ else:
         "👆 Cargá los archivos originales NASA FIRMS "
         "para comenzar."
     )
+    # Evita ejecutar las fases 2 y 3 sin datos cargados.
+    st.stop()
 
 # ==================================================
 # FASE 2A - COMPARACION TEMPORAL MODIS / VIIRS
