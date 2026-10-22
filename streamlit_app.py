@@ -5,6 +5,7 @@ import folium
 from streamlit_folium import st_folium
 from io import BytesIO
 import zipfile
+from datetime import timedelta
 
 st.set_page_config(
     page_title="NASA MODIS–VIIRS",
@@ -24,6 +25,11 @@ archivos = st.file_uploader(
     type=["csv", "zip"],
     accept_multiple_files=True
 )
+
+# El análisis necesita archivos para ejecutar todas sus fases.
+if not archivos:
+    st.info("Cargá archivos NASA FIRMS para iniciar el estudio en Uruguay.")
+    st.stop()
 
 def leer_archivo(archivo):
     if archivo.name.lower().endswith(".csv"):
@@ -69,6 +75,10 @@ if archivos:
         except Exception as e:
             st.error(f"Error en {archivo.name}: {e}")
 
+    if not tablas:
+        st.error("No se encontraron tablas CSV válidas.")
+        st.stop()
+
     if tablas:
         datos = pd.concat(tablas, ignore_index=True)
         datos["latitude"] = pd.to_numeric(
@@ -80,6 +90,36 @@ if archivos:
         datos = datos.dropna(
             subset=["latitude", "longitude"]
         )
+
+        # Recorte preliminar por extensión territorial aproximada.
+        # NO equivale al contorno administrativo exacto de Uruguay.
+        total_cargado = len(datos)
+        datos = datos.loc[
+            datos["latitude"].between(-35.2, -30.0)
+            & datos["longitude"].between(-58.6, -53.0)
+        ].copy().reset_index(drop=True)
+        st.caption(
+            "Filtro preliminar Uruguay: latitudes -35.2 a -30.0 y "
+            "longitudes -58.6 a -53.0. Es un rectángulo aproximado, "
+            "no una frontera administrativa exacta."
+        )
+        st.write(f"Registros fuera del recorte aproximado: {total_cargado - len(datos)}")
+        if datos.empty:
+            st.error("No hay detecciones dentro del recorte geográfico de Uruguay.")
+            st.stop()
+
+        # Fecha UTC única y consistente para todas las fases.
+        if {"acq_date", "acq_time"}.issubset(datos.columns):
+            hora = (datos["acq_time"].astype(str)
+                    .str.replace(r"\.0$", "", regex=True).str.zfill(4))
+            datos["fecha_hora_utc"] = pd.to_datetime(
+                datos["acq_date"].astype(str) + " "
+                + hora.str[:2] + ":" + hora.str[2:],
+                errors="coerce", utc=True
+            )
+        else:
+            st.error("Los archivos requieren acq_date y acq_time para comparar satélites.")
+            st.stop()
 
         st.success("Archivos procesados correctamente.")
 
@@ -253,30 +293,30 @@ if archivos:
         "analizar las detecciones termicas."
     )
 
-    lat_min = st.number_input(
-        "Latitud minima",
-        value=-33.46,
-        format="%.4f"
+    st.caption("Definí el área dentro del recorte aproximado de Uruguay. "
+               "Podés estudiar un departamento o una zona más pequeña.")
+    nombre_caso = st.text_input(
+        "Nombre del área o caso de estudio",
+        value="Área seleccionada de Uruguay",
+        key="nombre_caso_uy"
     )
-
-    lat_max = st.number_input(
-        "Latitud maxima",
-        value=-33.28,
-        format="%.4f"
-    )
-
-    lon_min = st.number_input(
-        "Longitud minima",
-        value=-56.75,
-        format="%.4f"
-    )
-
-    lon_max = st.number_input(
-        "Longitud maxima",
-        value=-56.44,
-        format="%.4f"
-    )
-
+    min_lat_d, max_lat_d = float(datos.latitude.min()), float(datos.latitude.max())
+    min_lon_d, max_lon_d = float(datos.longitude.min()), float(datos.longitude.max())
+    lat_min = st.number_input("Latitud mínima", min_value=-35.2,
+                              max_value=-30.0, value=max(-35.2, min_lat_d - 0.01),
+                              format="%.4f")
+    lat_max = st.number_input("Latitud máxima", min_value=-35.2,
+                              max_value=-30.0, value=min(-30.0, max_lat_d + 0.01),
+                              format="%.4f")
+    lon_min = st.number_input("Longitud mínima", min_value=-58.6,
+                              max_value=-53.0, value=max(-58.6, min_lon_d - 0.01),
+                              format="%.4f")
+    lon_max = st.number_input("Longitud máxima", min_value=-58.6,
+                              max_value=-53.0, value=min(-53.0, max_lon_d + 0.01),
+                              format="%.4f")
+    if lat_min >= lat_max or lon_min >= lon_max:
+        st.error("El rango geográfico no es válido.")
+        st.stop()
     if lat_min >= lat_max or lon_min >= lon_max:
         st.error("Revisa los limites geograficos.")
     else:
@@ -371,7 +411,8 @@ columnas_necesarias = {
 # Crear fecha y hora UTC a partir de los datos NASA FIRMS
 if {"acq_date", "acq_time"}.issubset(region_filtrada.columns):
     fecha = region_filtrada["acq_date"].astype(str)
-    hora = region_filtrada["acq_time"].astype(str).str.zfill(4)
+    hora = (region_filtrada["acq_time"].astype(str)
+            .str.replace(r"\.0$", "", regex=True).str.zfill(4))
 
     region_filtrada["fecha_hora_utc"] = pd.to_datetime(
         fecha + " " + hora.str[:2] + ":" + hora.str[2:],
@@ -569,7 +610,8 @@ def preparar_fechas_2d(tabla):
 
     if {"acq_date", "acq_time"}.issubset(tabla.columns):
         fecha = tabla["acq_date"].astype(str)
-        hora = tabla["acq_time"].astype(str).str.zfill(4)
+        hora = (tabla["acq_time"].astype(str)
+                .str.replace(r"\.0$", "", regex=True).str.zfill(4))
 
         tabla["fecha_2d"] = pd.to_datetime(
             fecha + " " + hora.str[:2] + ":" + hora.str[2:],
@@ -970,227 +1012,117 @@ else:
         )
 
 # ============================================================
-# FASE 3 - RESULTADOS, VALIDACION Y CONCLUSIONES
-# NASA MODIS-VIIRS Harmonization
+# FASE 3 - RESULTADOS Y CONCLUSIONES DINÁMICOS
+# Se alimenta de la región filtrada y los resultados de Fase 2E.
 # ============================================================
 
 st.divider()
-
 st.header("Fase 3 - Resultados y conclusiones")
+st.info("Las asociaciones son candidatas, no incendios confirmados ni validación independiente.")
 
-st.write(
-    "Esta sección resume los resultados del análisis "
-    "exploratorio de correspondencias entre MODIS y VIIRS."
+st.subheader(f"Caso de estudio: {nombre_caso.strip() or 'Área seleccionada'}, Uruguay")
+base_fase3 = region_filtrada.copy()
+base_fase3["fecha_hora_utc"] = pd.to_datetime(
+    base_fase3["fecha_hora_utc"], utc=True, errors="coerce"
 )
+base_fase3 = base_fase3.dropna(subset=["fecha_hora_utc"])
 
-st.info(
-    "Las correspondencias identificadas son candidatas. "
-    "No representan incendios confirmados ni una "
-    "validación independiente del algoritmo."
-)
+if base_fase3.empty:
+    st.warning("No hay registros con fecha válida en la región seleccionada.")
+    st.stop()
 
-# ------------------------------------------------------------
-# 3.1 - RESUMEN DEL CASO DE ESTUDIO
-# ------------------------------------------------------------
+fecha_min = base_fase3["fecha_hora_utc"].min()
+fecha_max = base_fase3["fecha_hora_utc"].max()
+st.write(f"Período observado en los datos filtrados (UTC): "
+         f"{fecha_min:%d/%m/%Y %H:%M} a {fecha_max:%d/%m/%Y %H:%M}.")
+st.caption("Este período corresponde a registros presentes en los archivos; "
+           "no necesariamente al período completo solicitado a NASA FIRMS.")
 
-st.subheader("Caso de estudio: Durazno, Uruguay")
+conteo = base_fase3["producto"].value_counts()
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("MODIS", int(conteo.get("MODIS", 0)))
+c2.metric("VIIRS NOAA-20", int(conteo.get("VIIRS NOAA-20", 0)))
+c3.metric("VIIRS S-NPP", int(conteo.get("VIIRS S-NPP", 0)))
+c4.metric("Total regional", len(base_fase3))
+st.caption("Se cuentan anomalías térmicas detectadas, no incendios individuales.")
 
-st.write(
-    "Período de descarga NASA FIRMS: "
-    "13 al 17 de enero de 2023."
-)
+st.subheader("Comparación de escenarios calculada")
+if "tabla_2e" in globals() and not tabla_2e.empty and not modis_2e.empty and not viirs_2e.empty:
+    resumen_fase3 = tabla_2e.copy()
+    st.dataframe(resumen_fase3, use_container_width=True, hide_index=True)
+    st.caption("Los nueve escenarios se recalculan con la región y los ZIP/CSV cargados.")
+else:
+    resumen_fase3 = pd.DataFrame()
+    st.warning("No hay comparación MODIS–VIIRS disponible para este caso. "
+               "Se requieren registros válidos de ambos sensores.")
 
-st.write(
-    "Las 28 detecciones seleccionadas en la región "
-    "corresponden al 15 de enero de 2023."
-)
-
-c1, c2, c3 = st.columns(3)
-
-c1.metric("MODIS", 11)
-c2.metric("VIIRS NOAA-20", 7)
-c3.metric("VIIRS S-NPP", 10)
-
-st.caption(
-    "Los valores corresponden a detecciones satelitales "
-    "de anomalías térmicas, no a incendios individuales."
-)
-
-# ------------------------------------------------------------
-# 3.2 - RESULTADOS DE REFERENCIA
-# ------------------------------------------------------------
-
-st.subheader("Comparación de escenarios")
-
-resumen_fase3 = pd.DataFrame([
-    {
-        "Distancia máxima (km)": 0.5,
-        "Tiempo máximo (min)": 30,
-        "Pares candidatos": 5
-    },
-    {
-        "Distancia máxima (km)": 1.0,
-        "Tiempo máximo (min)": 60,
-        "Pares candidatos": 24
-    },
-    {
-        "Distancia máxima (km)": 1.0,
-        "Tiempo máximo (min)": 180,
-        "Pares candidatos": 51
-    },
-    {
-        "Distancia máxima (km)": 2.0,
-        "Tiempo máximo (min)": 60,
-        "Pares candidatos": 26
-    },
-    {
-        "Distancia máxima (km)": 2.0,
-        "Tiempo máximo (min)": 180,
-        "Pares candidatos": 67
-    }
-])
-
-st.dataframe(
-    resumen_fase3,
-    use_container_width=True,
-    hide_index=True
-)
-
-st.caption(
-    "Valores de referencia obtenidos previamente "
-    "con el conjunto de datos de Durazno. "
-    "No son resultados calculados para nuevos archivos."
-)
-
-# ------------------------------------------------------------
-# 3.3 - INTERPRETACION CIENTIFICA
-# ------------------------------------------------------------
-
-st.subheader("¿Qué aprendimos?")
-
+st.subheader("Interpretación científica")
 st.markdown("""
-**1. Los satélites no producen detecciones idénticas.**
-
-MODIS y VIIRS poseen características instrumentales
-diferentes. Por eso, sus observaciones pueden variar
-en posición, cantidad y horario.
-
-**2. La ventana temporal influye en los resultados.**
-
-Al ampliar el tiempo permitido entre observaciones,
-aumenta la cantidad de pares candidatos.
-
-**3. La distancia también modifica las correspondencias.**
-
-Una tolerancia espacial mayor puede incorporar nuevas
-asociaciones, pero no garantiza que sean correctas.
-
-**4. Una correspondencia no equivale a un incendio.**
-
-Una detección puede participar en varios pares.
-Las asociaciones deben interpretarse con precaución.
+- MODIS y VIIRS pueden observar una misma zona en horarios y posiciones distintos.
+- Aumentar las tolerancias espacial y temporal puede incrementar los pares candidatos.
+- Una detección puede participar en varios pares: no son asociaciones uno a uno.
+- Sin referencia externa de incendios reales no se puede medir precisión, sensibilidad
+  ni tasa de falsos positivos.
 """)
 
-# ------------------------------------------------------------
-# 3.4 - ESTADO DE VALIDACION
-# ------------------------------------------------------------
-
 st.subheader("Estado de validación")
-
 estado_fase3 = pd.DataFrame([
-    {
-        "Actividad": "Lectura de datos NASA FIRMS",
-        "Estado": "Completada"
-    },
-    {
-        "Actividad": "Visualización geográfica",
-        "Estado": "Completada"
-    },
-    {
-        "Actividad": "Comparación espacial y temporal",
-        "Estado": "Completada"
-    },
-    {
-        "Actividad": "Análisis de sensibilidad",
-        "Estado": "Completada"
-    },
-    {
-        "Actividad": "Segundo caso de estudio",
-        "Estado": "Pendiente"
-    },
-    {
-        "Actividad": "Validación independiente",
-        "Estado": "Pendiente"
-    }
+    {"Actividad": "Lectura y filtrado de datos NASA FIRMS", "Estado": "Completada"},
+    {"Actividad": "Visualización geográfica", "Estado": "Completada"},
+    {"Actividad": "Comparación espacial y temporal", "Estado": "Completada si hay ambos sensores"},
+    {"Actividad": "Análisis de sensibilidad", "Estado": "Completada si hay ambos sensores"},
+    {"Actividad": "Segundo caso de estudio", "Estado": "Pendiente de prueba"},
+    {"Actividad": "Validación independiente", "Estado": "Pendiente"},
 ])
-
-st.dataframe(
-    estado_fase3,
-    use_container_width=True,
-    hide_index=True
-)
-
-st.warning(
-    "Este prototipo todavía no permite estimar "
-    "precisión, sensibilidad ni tasa de falsos positivos "
-    "frente a incendios reales. Para ello se necesita "
-    "una referencia independiente."
-)
-
-# ------------------------------------------------------------
-# 3.5 - CONCLUSION
-# ------------------------------------------------------------
+st.dataframe(estado_fase3, use_container_width=True, hide_index=True)
 
 st.subheader("Conclusión del estudio")
-
-conclusion_fase3 = (
-    "En el caso de estudio de Durazno, el algoritmo "
-    "permitió identificar correspondencias espaciales "
-    "y temporales candidatas entre detecciones MODIS "
-    "y VIIRS. El análisis de nueve escenarios mostró "
-    "que la cantidad de correspondencias depende de "
-    "los límites espaciales y temporales seleccionados, "
-    "especialmente de la ventana temporal. "
-    "Los resultados son exploratorios y requieren "
-    "validación independiente antes de establecer "
-    "el desempeño del método."
-)
-
+if not resumen_fase3.empty:
+    base_1km_60 = resumen_fase3.loc[
+        (resumen_fase3["Distancia_km"] == 1.0) &
+        (resumen_fase3["Tiempo_min"] == 60)
+    ]
+    pares_referencia = int(base_1km_60.iloc[0]["Pares_candidatos"])
+    conclusion_fase3 = (
+        f"En {nombre_caso.strip() or 'el área seleccionada'} se analizaron "
+        f"{len(base_fase3)} detecciones térmicas. Con límites de 1 km y 60 minutos "
+        f"se encontraron {pares_referencia} pares candidatos MODIS–VIIRS. "
+        "El número de asociaciones depende de los límites espaciales y temporales. "
+        "Estos resultados son exploratorios y no identifican incendios confirmados."
+    )
+else:
+    conclusion_fase3 = (
+        f"En {nombre_caso.strip() or 'el área seleccionada'} se analizaron "
+        f"{len(base_fase3)} detecciones térmicas. No se pudo calcular una comparación "
+        "entre MODIS y VIIRS con los datos disponibles."
+    )
 st.success(conclusion_fase3)
 
-# ------------------------------------------------------------
-# 3.6 - DESCARGAR INFORME
-# ------------------------------------------------------------
-
 st.subheader("Descargar informe")
-
 informe_fase3 = (
-    "NASA MODIS-VIIRS HARMONIZATION\n"
-    "INFORME EXPLORATORIO\n\n"
-    "Caso: Durazno, Uruguay\n"
-    "Fecha de detecciones: 15/01/2023\n\n"
-    "MODIS: 11 detecciones\n"
-    "VIIRS NOAA-20: 7 detecciones\n"
-    "VIIRS S-NPP: 10 detecciones\n"
-    "Total regional: 28 detecciones\n\n"
-    "RESULTADOS DE REFERENCIA\n"
-    + resumen_fase3.to_string(index=False)
-    + "\n\nCONCLUSION\n"
-    + conclusion_fase3
+    "NASA MODIS–VIIRS HARMONIZATION\n"
+    "INFORME EXPLORATORIO DINÁMICO – URUGUAY\n\n"
+    f"Caso: {nombre_caso.strip() or 'Área seleccionada'}, Uruguay\n"
+    f"Región: lat {lat_min:.4f} a {lat_max:.4f}; "
+    f"lon {lon_min:.4f} a {lon_max:.4f}\n"
+    f"Período observado (UTC): {fecha_min} a {fecha_max}\n"
+    f"MODIS: {int(conteo.get('MODIS', 0))}\n"
+    f"VIIRS NOAA-20: {int(conteo.get('VIIRS NOAA-20', 0))}\n"
+    f"VIIRS S-NPP: {int(conteo.get('VIIRS S-NPP', 0))}\n"
+    f"Total regional: {len(base_fase3)}\n\n"
+    "ESCENARIOS CALCULADOS\n"
+    + (resumen_fase3.to_string(index=False) if not resumen_fase3.empty
+       else "No disponibles")
+    + "\n\nCONCLUSIÓN\n" + conclusion_fase3
     + "\n\nLIMITACIONES\n"
-    "Las correspondencias son candidatas.\n"
-    "No se identifican incendios confirmados.\n"
-    "No existe aún validación independiente.\n"
+      "Recorte nacional rectangular aproximado, no frontera exacta.\n"
+      "Correspondencias candidatas; no incendios confirmados.\n"
+      "No existe validación independiente.\n"
 )
-
 st.download_button(
-    label="Descargar informe del estudio",
+    "Descargar informe del estudio",
     data=informe_fase3.encode("utf-8-sig"),
-    file_name="informe_modis_viirs_durazno.txt",
+    file_name="informe_modis_viirs_uruguay.txt",
     mime="text/plain"
 )
-
-st.caption(
-    "Prototipo de investigación y armonización "
-    "exploratoria de detecciones satelitales."
-)
+st.caption("Prototipo exploratorio de investigación NASA Space Apps Challenge 2026.")
