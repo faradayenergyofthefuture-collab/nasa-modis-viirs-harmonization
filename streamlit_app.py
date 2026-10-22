@@ -368,6 +368,18 @@ columnas_necesarias = {
 }
 
 
+# Crear fecha y hora UTC a partir de los datos NASA FIRMS
+if {"acq_date", "acq_time"}.issubset(region_filtrada.columns):
+    fecha = region_filtrada["acq_date"].astype(str)
+    hora = region_filtrada["acq_time"].astype(str).str.zfill(4)
+
+    region_filtrada["fecha_hora_utc"] = pd.to_datetime(
+        fecha + " " + hora.str[:2] + ":" + hora.str[2:],
+        format="%Y-%m-%d %H:%M",
+        utc=True,
+        errors="coerce"
+    )
+
 if not columnas_necesarias.issubset(region_filtrada.columns):
     faltantes = sorted(
         columnas_necesarias - set(region_filtrada.columns)
