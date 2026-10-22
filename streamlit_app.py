@@ -367,10 +367,22 @@ columnas_necesarias = {
     "latitude", "longitude", "producto", "fecha_hora_utc"
 }
 
+
 if not columnas_necesarias.issubset(region_filtrada.columns):
+    faltantes = sorted(
+        columnas_necesarias - set(region_filtrada.columns)
+    )
+
     st.warning(
         "Faltan columnas necesarias para realizar la comparación."
     )
+
+    st.write("Columnas faltantes:", faltantes)
+    st.write(
+        "Columnas disponibles:",
+        list(region_filtrada.columns)
+    )
+
 
 elif region_filtrada.empty:
     st.info("No hay detecciones en la región seleccionada.")
