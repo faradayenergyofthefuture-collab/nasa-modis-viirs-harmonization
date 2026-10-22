@@ -1128,3 +1128,177 @@ st.download_button(
     mime="text/plain"
 )
 st.caption("Prototipo exploratorio de investigación NASA Space Apps Challenge 2026.")
+
+
+# ============================================================
+# FASE 4 - CALENDARIO DINAMICO DE ACTIVIDAD TERMICA
+# Pegar al final de streamlit_app.py, despues de la Fase 3.
+# ============================================================
+
+import calendar
+from datetime import date
+
+st.divider()
+st.header("Fase 4 - Calendario de actividad termica")
+st.write(
+    "Calendario de detecciones termicas NASA FIRMS dentro de la region "
+    "seleccionada en la Fase 2B. Cada casilla muestra la cantidad de "
+    "registros de ese dia (UTC)."
+)
+st.info(
+    "Los colores representan cantidad de detecciones satelitales, "
+    "no cantidad de incendios confirmados. Un dia sin registros "
+    "no demuestra ausencia de incendios."
+)
+
+base_cal = region_filtrada.copy()
+base_cal["fecha_hora_utc"] = pd.to_datetime(
+    base_cal["fecha_hora_utc"], errors="coerce", utc=True
+)
+base_cal = base_cal.dropna(subset=["fecha_hora_utc", "producto"])
+
+if base_cal.empty:
+    st.warning("No hay detecciones con fecha valida en la region seleccionada.")
+else:
+    base_cal["dia_utc"] = base_cal["fecha_hora_utc"].dt.date
+    base_cal["anio_cal"] = base_cal["fecha_hora_utc"].dt.year
+    base_cal["mes_cal"] = base_cal["fecha_hora_utc"].dt.month
+
+    anios_cal = sorted(base_cal["anio_cal"].unique().tolist())
+    c_anio, c_mes = st.columns(2)
+    with c_anio:
+        anio_elegido = st.selectbox(
+            "Anio", anios_cal, index=len(anios_cal) - 1,
+            key="fase4_anio"
+        )
+    with c_mes:
+        meses_presentes = sorted(
+            base_cal.loc[base_cal["anio_cal"] == anio_elegido, "mes_cal"]
+            .unique().tolist()
+        )
+        nombres_meses = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ]
+        mes_elegido = st.selectbox(
+            "Mes", meses_presentes,
+            format_func=lambda m: nombres_meses[m - 1],
+            key="fase4_mes"
+        )
+
+    mes_cal = base_cal.loc[
+        (base_cal["anio_cal"] == anio_elegido)
+        & (base_cal["mes_cal"] == mes_elegido)
+    ].copy()
+    conteo_diario = mes_cal.groupby("dia_utc").size()
+    max_diario = int(conteo_diario.max()) if not conteo_diario.empty else 0
+
+    def color_calendario(n, maximo):
+        if n == 0:
+            return "#f1f5f9"
+        fraccion = n / maximo if maximo else 0
+        if fraccion <= 0.25:
+            return "#fde68a"
+        if fraccion <= 0.50:
+            return "#fdba74"
+        if fraccion <= 0.75:
+            return "#fb923c"
+        return "#ef4444"
+
+    semanas_cal = calendar.monthcalendar(anio_elegido, mes_elegido)
+    html_cal = (
+        '<table style="width:100%;border-collapse:separate;'
+        'border-spacing:4px;table-layout:fixed;text-align:center">'
+        '<thead><tr>'
+        + ''.join(
+            f'<th style="padding:8px">{d}</th>'
+            for d in ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"]
+        )
+        + '</tr></thead><tbody>'
+    )
+    for semana in semanas_cal:
+        html_cal += '<tr>'
+        for numero_dia in semana:
+            if numero_dia == 0:
+                html_cal += '<td style="height:70px"></td>'
+            else:
+                fecha_celda = date(anio_elegido, mes_elegido, numero_dia)
+                cantidad = int(conteo_diario.get(fecha_celda, 0))
+                fondo = color_calendario(cantidad, max_diario)
+                tinta = "#ffffff" if cantidad and cantidad / max_diario > 0.75 else "#172033"
+                html_cal += (
+                    f'<td style="background:{fondo};color:{tinta};'
+                    'border-radius:8px;height:70px;padding:5px">'
+                    f'<div style="font-weight:bold">{numero_dia}</div>'
+                    f'<div style="font-size:12px">{cantidad} det.</div>'
+                    '</td>'
+                )
+        html_cal += '</tr>'
+    html_cal += '</tbody></table>'
+    st.markdown(html_cal, unsafe_allow_html=True)
+    st.caption(
+        "Escala relativa al maximo diario del mes mostrado. "
+        "Gris: 0; amarillo: baja; naranja: intermedia; rojo: maxima "
+        "actividad registrada. Los dias en gris pueden carecer de cobertura "
+        "satelital en los archivos cargados."
+    )
+
+    total_mes = len(mes_cal)
+    dias_activos = int((conteo_diario > 0).sum())
+    pico_dia = conteo_diario.idxmax()
+    c_a, c_b, c_c = st.columns(3)
+    c_a.metric("Detecciones del mes", total_mes)
+    c_b.metric("Dias con detecciones", dias_activos)
+    c_c.metric("Maximo diario", max_diario)
+    st.caption(f"Dia de mayor registro: {pico_dia:%d/%m/%Y} (UTC).")
+
+    st.subheader("Detalle de un dia")
+    fechas_disponibles = sorted(conteo_diario.index.tolist())
+    dia_elegido = st.selectbox(
+        "Selecciona un dia con detecciones", fechas_disponibles,
+        format_func=lambda d: d.strftime("%d/%m/%Y"),
+        key="fase4_dia"
+    )
+    detalle_dia = mes_cal.loc[mes_cal["dia_utc"] == dia_elegido].copy()
+    desglose_dia = (
+        detalle_dia["producto"].value_counts()
+        .rename_axis("Sensor").reset_index(name="Detecciones")
+    )
+    st.dataframe(desglose_dia, use_container_width=True, hide_index=True)
+    st.caption(
+        f"Region: {nombre_caso.strip() or 'Area seleccionada'}; "
+        f"latitud {lat_min:.4f} a {lat_max:.4f}; "
+        f"longitud {lon_min:.4f} a {lon_max:.4f}."
+    )
+
+    st.subheader("Evolucion diaria por sensor")
+    resumen_cal = (
+        mes_cal.groupby(["dia_utc", "producto"]).size()
+        .unstack(fill_value=0)
+    )
+    # Completar los dias del mes con cero para una linea temporal continua.
+    primer_dia = date(anio_elegido, mes_elegido, 1)
+    ultimo_dia = date(
+        anio_elegido, mes_elegido,
+        calendar.monthrange(anio_elegido, mes_elegido)[1]
+    )
+    dias_mes = pd.date_range(primer_dia, ultimo_dia, freq="D")
+    resumen_cal.index = pd.to_datetime(resumen_cal.index)
+    resumen_cal = resumen_cal.reindex(dias_mes, fill_value=0)
+    st.bar_chart(resumen_cal)
+
+    exportar_cal = resumen_cal.copy()
+    exportar_cal.index.name = "Fecha_UTC"
+    exportar_cal["Total"] = exportar_cal.sum(axis=1)
+    st.download_button(
+        "Descargar calendario mensual CSV",
+        data=exportar_cal.to_csv().encode("utf-8-sig"),
+        file_name=f"calendario_modis_viirs_{anio_elegido}_{mes_elegido:02d}.csv",
+        mime="text/csv",
+        key="fase4_descarga"
+    )
+    st.caption(
+        "Los recuentos corresponden solo a los datos NASA FIRMS cargados "
+        "y a la region seleccionada. No se corrige por cobertura, "
+        "sobrepasos satelitales ni duplicacion entre sensores."
+    )
