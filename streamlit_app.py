@@ -308,3 +308,181 @@ if archivos:
                 conteo_region,
                 use_container_width=True
             )
+
+# ============================================================
+# FASE 2C - CORRESPONDENCIAS ESPACIALES Y TEMPORALES
+# ============================================================
+
+from math import radians, sin, cos, asin, sqrt
+
+st.divider()
+st.header("Fase 2C - Correspondencias espaciales y temporales")
+
+st.write(
+    "Comparación exploratoria entre detecciones MODIS y VIIRS "
+    "mediante distancia geográfica y diferencia temporal."
+)
+
+def distancia_haversine(lat1, lon1, lat2, lon2):
+    """Calcula la distancia entre dos coordenadas en km."""
+    radio_tierra = 6371.0088
+
+    lat1, lon1, lat2, lon2 = map(
+        radians, [lat1, lon1, lat2, lon2]
+    )
+
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = (
+        sin(dlat / 2) ** 2
+        + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    )
+
+    return 2 * radio_tierra * asin(min(1, sqrt(a)))
+
+
+distancia_maxima = st.slider(
+    "Distancia máxima entre detecciones (km)",
+    min_value=0.5,
+    max_value=20.0,
+    value=2.0,
+    step=0.5
+)
+
+tiempo_maximo = st.slider(
+    "Diferencia temporal máxima (minutos)",
+    min_value=15,
+    max_value=1440,
+    value=180,
+    step=15
+)
+
+st.caption(
+    "Los límites iniciales son exploratorios. "
+    "No constituyen umbrales científicos validados."
+)
+
+columnas_necesarias = {
+    "latitude", "longitude", "producto", "fecha_hora_utc"
+}
+
+if not columnas_necesarias.issubset(region_filtrada.columns):
+    st.warning(
+        "Faltan columnas necesarias para realizar la comparación."
+    )
+
+elif region_filtrada.empty:
+    st.info("No hay detecciones en la región seleccionada.")
+
+else:
+    comparacion_2c = region_filtrada.copy()
+
+    comparacion_2c["fecha_hora_utc"] = pd.to_datetime(
+        comparacion_2c["fecha_hora_utc"],
+        utc=True,
+        errors="coerce"
+    )
+
+    comparacion_2c = comparacion_2c.dropna(
+        subset=[
+            "latitude",
+            "longitude",
+            "fecha_hora_utc",
+            "producto"
+        ]
+    )
+
+    modis = comparacion_2c[
+        comparacion_2c["producto"]
+        .astype(str)
+        .str.upper()
+        .str.contains("MODIS")
+    ]
+
+    viirs = comparacion_2c[
+        comparacion_2c["producto"]
+        .astype(str)
+        .str.upper()
+        .str.contains("VIIRS")
+    ]
+
+    coincidencias = []
+
+    for indice_m, fila_m in modis.iterrows():
+        for indice_v, fila_v in viirs.iterrows():
+
+            distancia = distancia_haversine(
+                fila_m["latitude"],
+                fila_m["longitude"],
+                fila_v["latitude"],
+                fila_v["longitude"]
+            )
+
+            diferencia_min = abs(
+                (
+                    fila_m["fecha_hora_utc"]
+                    - fila_v["fecha_hora_utc"]
+                ).total_seconds()
+            ) / 60
+
+            if (
+                distancia <= distancia_maxima
+                and diferencia_min <= tiempo_maximo
+            ):
+                coincidencias.append({
+                    "MODIS_indice": indice_m,
+                    "VIIRS_indice": indice_v,
+                    "Satélite_VIIRS": fila_v["producto"],
+                    "Distancia_km": round(distancia, 3),
+                    "Diferencia_min": round(diferencia_min, 1),
+                    "Fecha_MODIS_UTC": fila_m["fecha_hora_utc"],
+                    "Fecha_VIIRS_UTC": fila_v["fecha_hora_utc"],
+                    "Lat_MODIS": fila_m["latitude"],
+                    "Lon_MODIS": fila_m["longitude"],
+                    "Lat_VIIRS": fila_v["latitude"],
+                    "Lon_VIIRS": fila_v["longitude"]
+                })
+
+    resultados_2c = pd.DataFrame(coincidencias)
+
+    st.subheader("Resultados de la comparación")
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Detecciones MODIS", len(modis))
+    col2.metric("Detecciones VIIRS", len(viirs))
+    col3.metric(
+        "Pares candidatos",
+        len(resultados_2c)
+    )
+
+    if resultados_2c.empty:
+        st.warning(
+            "No se encontraron pares que cumplan ambos límites."
+        )
+
+    else:
+        resultados_2c = resultados_2c.sort_values(
+            ["Distancia_km", "Diferencia_min"]
+        )
+
+        st.dataframe(
+            resultados_2c,
+            use_container_width=True
+        )
+
+        st.download_button(
+            "Descargar correspondencias CSV",
+            data=resultados_2c.to_csv(
+                index=False
+            ).encode("utf-8"),
+            file_name="correspondencias_modis_viirs.csv",
+            mime="text/csv"
+        )
+
+    st.info(
+        "Los resultados representan pares candidatos, "
+        "no incendios confirmados ni correspondencias únicas. "
+        "Una misma detección puede aparecer en varios pares."
+    )
