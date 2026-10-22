@@ -760,3 +760,211 @@ else:
         "en la muestra analizada. No representan precisión, "
         "sensibilidad ni validación independiente del algoritmo."
     )
+
+# ============================================================
+# FASE 2E - ANALISIS AUTOMATICO DE SENSIBILIDAD
+# ============================================================
+
+import numpy as np
+
+st.divider()
+st.header("Fase 2E - Analisis de sensibilidad")
+
+st.write(
+    "Evaluacion de la estabilidad de las correspondencias "
+    "MODIS-VIIRS ante diferentes limites espaciales y temporales."
+)
+
+st.info(
+    "Este analisis mide correspondencias candidatas. "
+    "No mide precision ni confirma incendios."
+)
+
+# Trabajar sobre la region seleccionada
+base_2e = region_filtrada.copy()
+
+columnas_2e = {
+    "latitude", "longitude", "producto",
+    "fecha_hora_utc"
+}
+
+if not columnas_2e.issubset(base_2e.columns):
+    st.warning(
+        "Faltan columnas para realizar el analisis de sensibilidad."
+    )
+
+else:
+    base_2e["fecha_hora_utc"] = pd.to_datetime(
+        base_2e["fecha_hora_utc"],
+        utc=True,
+        errors="coerce"
+    )
+
+    for columna in ["latitude", "longitude"]:
+        base_2e[columna] = pd.to_numeric(
+            base_2e[columna],
+            errors="coerce"
+        )
+
+    base_2e = base_2e.dropna(
+        subset=[
+            "latitude", "longitude",
+            "fecha_hora_utc", "producto"
+        ]
+    )
+
+    modis_2e = base_2e[
+        base_2e["producto"].astype(str)
+        .str.upper().str.contains("MODIS")
+    ].copy()
+
+    viirs_2e = base_2e[
+        base_2e["producto"].astype(str)
+        .str.upper().str.contains("VIIRS")
+    ].copy()
+
+    if modis_2e.empty or viirs_2e.empty:
+        st.warning(
+            "Se necesitan detecciones MODIS y VIIRS "
+            "para realizar la comparacion."
+        )
+
+    else:
+        # Conservar identificadores de las filas originales
+        modis_2e = modis_2e.reset_index(drop=True)
+        viirs_2e = viirs_2e.reset_index(drop=True)
+
+        # Distancias geograficas mediante Haversine
+        radio_tierra_km = 6371.0088
+
+        lat_m = np.radians(
+            modis_2e["latitude"].to_numpy()
+        )[:, None]
+
+        lon_m = np.radians(
+            modis_2e["longitude"].to_numpy()
+        )[:, None]
+
+        lat_v = np.radians(
+            viirs_2e["latitude"].to_numpy()
+        )[None, :]
+
+        lon_v = np.radians(
+            viirs_2e["longitude"].to_numpy()
+        )[None, :]
+
+        dlat = lat_v - lat_m
+        dlon = lon_v - lon_m
+
+        a = (
+            np.sin(dlat / 2) ** 2
+            + np.cos(lat_m)
+            * np.cos(lat_v)
+            * np.sin(dlon / 2) ** 2
+        )
+
+        a = np.clip(a, 0, 1)
+
+        distancias = (
+            2 * radio_tierra_km
+            * np.arcsin(np.sqrt(a))
+        )
+
+        # Diferencia absoluta de tiempo en minutos
+        tiempos_m = modis_2e[
+            "fecha_hora_utc"
+        ].to_numpy()[:, None]
+
+        tiempos_v = viirs_2e[
+            "fecha_hora_utc"
+        ].to_numpy()[None, :]
+
+        diferencias_min = (
+            np.abs(tiempos_m - tiempos_v)
+            / np.timedelta64(1, "m")
+        )
+
+        # Escenarios exploratorios
+        limites_km = [0.5, 1.0, 2.0]
+        limites_min = [30, 60, 180]
+
+        resultados_2e = []
+
+        for distancia_max in limites_km:
+            for tiempo_max in limites_min:
+
+                mascara = (
+                    (distancias <= distancia_max)
+                    & (diferencias_min <= tiempo_max)
+                )
+
+                pares = int(mascara.sum())
+
+                modis_con = int(
+                    mascara.any(axis=1).sum()
+                )
+
+                viirs_con = int(
+                    mascara.any(axis=0).sum()
+                )
+
+                resultados_2e.append({
+                    "Distancia_km": distancia_max,
+                    "Tiempo_min": tiempo_max,
+                    "Pares_candidatos": pares,
+                    "MODIS_con": modis_con,
+                    "VIIRS_con": viirs_con,
+                    "Cobertura_MODIS_pct": round(
+                        100 * modis_con / len(modis_2e), 2
+                    ),
+                    "Cobertura_VIIRS_pct": round(
+                        100 * viirs_con / len(viirs_2e), 2
+                    )
+                })
+
+        tabla_2e = pd.DataFrame(resultados_2e)
+
+        st.subheader("Comparacion de los nueve escenarios")
+
+        st.dataframe(
+            tabla_2e,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.subheader("Evolucion de pares candidatos")
+
+        grafico_2e = tabla_2e.pivot(
+            index="Tiempo_min",
+            columns="Distancia_km",
+            values="Pares_candidatos"
+        )
+
+        grafico_2e.columns = [
+            f"{col} km" for col in grafico_2e.columns
+        ]
+
+        st.line_chart(grafico_2e)
+
+        st.caption(
+            "Cada curva representa una distancia maxima. "
+            "El eje horizontal representa la ventana temporal "
+            "en minutos."
+        )
+
+        csv_2e = tabla_2e.to_csv(
+            index=False,
+            sep=";",
+            decimal=","
+        ).encode("utf-8-sig")
+
+        st.download_button(
+            "Descargar analisis de sensibilidad CSV",
+            data=csv_2e,
+            file_name="sensibilidad_modis_viirs.csv",
+            mime="text/csv"
+        )
+
+        st.success(
+            "Analisis de sensibilidad completado."
+        )
