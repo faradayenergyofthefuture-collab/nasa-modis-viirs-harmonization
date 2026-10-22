@@ -239,3 +239,72 @@ if archivos:
             "Faltan columnas necesarias para "
             "realizar la comparacion temporal."
         )
+
+# ==========================================
+# FASE 2B - SELECCION GEOGRAFICA
+# ==========================================
+
+if archivos:
+    st.divider()
+    st.header("Fase 2B - Seleccion geografica")
+
+    st.write(
+        "Selecciona los limites geograficos para "
+        "analizar las detecciones termicas."
+    )
+
+    lat_min = st.number_input(
+        "Latitud minima",
+        value=-33.46,
+        format="%.4f"
+    )
+
+    lat_max = st.number_input(
+        "Latitud maxima",
+        value=-33.28,
+        format="%.4f"
+    )
+
+    lon_min = st.number_input(
+        "Longitud minima",
+        value=-56.75,
+        format="%.4f"
+    )
+
+    lon_max = st.number_input(
+        "Longitud maxima",
+        value=-56.44,
+        format="%.4f"
+    )
+
+    if lat_min >= lat_max or lon_min >= lon_max:
+        st.error("Revisa los limites geograficos.")
+    else:
+        region_filtrada = datos.loc[
+            datos["latitude"].between(lat_min, lat_max)
+            & datos["longitude"].between(lon_min, lon_max)
+        ].copy()
+
+        st.metric(
+            "Detecciones en la region",
+            len(region_filtrada)
+        )
+
+        st.subheader("Detecciones por producto")
+
+        if region_filtrada.empty:
+            st.warning(
+                "No hay detecciones en esta region."
+            )
+        else:
+            conteo_region = (
+                region_filtrada["producto"]
+                .value_counts()
+                .rename_axis("Producto")
+                .reset_index(name="Detecciones")
+            )
+
+            st.dataframe(
+                conteo_region,
+                use_container_width=True
+            )
