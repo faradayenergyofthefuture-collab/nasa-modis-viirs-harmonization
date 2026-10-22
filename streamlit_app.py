@@ -180,3 +180,62 @@ else:
         "👆 Cargá los archivos originales NASA FIRMS "
         "para comenzar."
     )
+
+# ==================================================
+# FASE 2A - COMPARACION TEMPORAL MODIS / VIIRS
+# ==================================================
+
+if archivos:
+    st.divider()
+    st.header("Fase 2A - Comparacion temporal")
+
+    comparacion = datos.copy()
+
+    if {"acq_date", "acq_time", "producto"}.issubset(comparacion.columns):
+
+        comparacion["hora_texto"] = (
+            comparacion["acq_time"]
+            .astype(str)
+            .str.replace(r"\.0$", "", regex=True)
+            .str.zfill(4)
+        )
+
+        comparacion["fecha_hora_utc"] = pd.to_datetime(
+            comparacion["acq_date"].astype(str)
+            + " "
+            + comparacion["hora_texto"].str[:2]
+            + ":"
+            + comparacion["hora_texto"].str[2:],
+            errors="coerce",
+            utc=True
+        )
+
+        comparacion = comparacion.dropna(
+            subset=["fecha_hora_utc"]
+        )
+
+        st.subheader("Detecciones por fecha y satelite")
+
+        resumen = (
+            comparacion.groupby(
+                [comparacion["fecha_hora_utc"].dt.date, "producto"]
+            )
+            .size()
+            .unstack(fill_value=0)
+        )
+
+        st.dataframe(resumen, use_container_width=True)
+        st.bar_chart(resumen)
+
+        st.caption(
+            "Los registros corresponden a detecciones "
+            "termicas satelitales, no necesariamente "
+            "a incendios diferentes. "
+            "La comparacion temporal no implica "
+            "observaciones simultaneas."
+        )
+    else:
+        st.warning(
+            "Faltan columnas necesarias para "
+            "realizar la comparacion temporal."
+        )
