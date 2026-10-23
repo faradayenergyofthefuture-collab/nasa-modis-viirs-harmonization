@@ -1311,3 +1311,258 @@ else:
         "y a la region seleccionada. No se corrige por cobertura, "
         "sobrepasos satelitales ni duplicacion entre sensores."
     )
+
+
+# ============================================================
+# FASE 5 - INFORME CIENTIFICO PDF (IGNIS)
+# Complemento independiente: no altera los calculos anteriores.
+# ============================================================
+
+st.divider()
+st.header("Fase 5 - Informe científico en PDF")
+st.write(
+    "Generá un informe descargable con la metodología, los resultados "
+    "del área seleccionada, la sensibilidad y el calendario mensual."
+)
+
+
+def construir_informe_pdf_ignis():
+    from io import BytesIO as _BytesIO
+    from xml.sax.saxutils import escape as _escape
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+        PageBreak, KeepTogether, Image as RLImage
+    )
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from reportlab.lib.units import cm
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    buf = _BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, rightMargin=1.8*cm, leftMargin=1.8*cm,
+        topMargin=1.8*cm, bottomMargin=1.8*cm,
+        title="IGNIS - Informe MODIS-VIIRS", author="Equipo IGNIS"
+    )
+    azul = colors.HexColor("#17324f")
+    gris = colors.HexColor("#566373")
+    claro = colors.HexColor("#edf3f8")
+    fuente = "Helvetica"
+    fuente_bold = "Helvetica-Bold"
+    # Fuente Unicode opcional: si no está, se usa Helvetica y texto normalizado.
+    fuentes_posibles = [
+        ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    ]
+    for regular, negrita in fuentes_posibles:
+        if Path(regular).exists() and Path(negrita).exists():
+            pdfmetrics.registerFont(TTFont("IgnisSans", regular))
+            pdfmetrics.registerFont(TTFont("IgnisSansBold", negrita))
+            pdfmetrics.registerFontFamily("IgnisSans", normal="IgnisSans", bold="IgnisSansBold")
+            fuente, fuente_bold = "IgnisSans", "IgnisSansBold"
+            break
+
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="IgnisTitulo", fontName=fuente_bold,
+        fontSize=20, leading=27, textColor=azul, alignment=TA_CENTER, spaceAfter=12))
+    styles.add(ParagraphStyle(name="IgnisSubtitulo", fontName=fuente,
+        fontSize=11, leading=16, textColor=gris, alignment=TA_CENTER, spaceAfter=10))
+    styles.add(ParagraphStyle(name="IgnisSeccion", fontName=fuente_bold,
+        fontSize=12, leading=16, textColor=azul, spaceBefore=13, spaceAfter=7))
+    styles.add(ParagraphStyle(name="IgnisTexto", fontName=fuente,
+        fontSize=9, leading=14, spaceAfter=7))
+    styles.add(ParagraphStyle(name="IgnisCelda", fontName=fuente,
+        fontSize=7.3, leading=10))
+    styles.add(ParagraphStyle(name="IgnisCeldaBold", fontName=fuente_bold,
+        fontSize=7.3, leading=10))
+    styles.add(ParagraphStyle(name="IgnisNota", fontName=fuente,
+        fontSize=8, leading=12, textColor=gris, spaceAfter=6))
+    story = []
+
+    def p(texto, estilo="IgnisTexto"):
+        return Paragraph(_escape(str(texto)), styles[estilo])
+
+    def seccion(titulo):
+        story.append(p(titulo, "IgnisSeccion"))
+
+    def tabla(columnas, filas, anchuras=None):
+        celdas = [[p(v, "IgnisCeldaBold") for v in columnas]]
+        celdas += [[p(v, "IgnisCelda") for v in fila] for fila in filas]
+        t = Table(celdas, colWidths=anchuras, repeatRows=1, hAlign="LEFT")
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), azul),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, claro]),
+            ("VALIGN", (0,0), (-1,-1), "TOP"),
+            ("GRID", (0,0), (-1,-1), .25, colors.HexColor("#cbd5e1")),
+            ("LEFTPADDING", (0,0), (-1,-1), 6),
+            ("RIGHTPADDING", (0,0), (-1,-1), 6),
+            ("TOPPADDING", (0,0), (-1,-1), 6),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+        ]))
+        # El fondo azul requiere texto blanco también en las celdas Paragraph.
+        for c in celdas[0]:
+            c.style = ParagraphStyle(name="CabeceraIgnis", parent=styles["IgnisCeldaBold"], textColor=colors.white)
+        story.append(t)
+        story.append(Spacer(1, .3*cm))
+
+    logo_path = Path(__file__).resolve().parent / "logo_ignis.png"
+    if logo_path.exists():
+        try:
+            logo = RLImage(str(logo_path))
+            proporcion = float(logo.imageHeight) / max(float(logo.imageWidth), 1)
+            logo.drawWidth = 5.0 * cm
+            logo.drawHeight = 5.0 * cm * proporcion
+            logo.hAlign = "CENTER"
+            story.append(logo)
+            story.append(Spacer(1, .45*cm))
+        except Exception:
+            pass
+
+    story.append(p("IGNIS | Armonización MODIS–VIIRS", "IgnisTitulo"))
+    story.append(p("Informe científico exploratorio · NASA Space Apps Challenge 2026", "IgnisSubtitulo"))
+    story.append(p(f"Caso de estudio: {nombre_caso.strip() or 'Área seleccionada de Uruguay'}", "IgnisSubtitulo"))
+    story.append(Spacer(1, .4*cm))
+
+    seccion("1. Resumen del estudio")
+    story.append(p(
+        f"Se analizaron {len(base_fase3)} registros de anomalías térmicas de NASA FIRMS "
+        f"en el área seleccionada. El período observado en los registros válidos "
+        f"abarca del {fecha_min:%d/%m/%Y %H:%M} al {fecha_max:%d/%m/%Y %H:%M} (UTC). "
+        "Las coincidencias MODIS–VIIRS son asociaciones candidatas, no incendios confirmados."
+    ))
+    seccion("2. Fuente de datos y área geográfica")
+    story.append(p("Fuente: archivos CSV o ZIP NASA FIRMS aportados por quien utiliza la aplicación. "
+        "Se realiza primero un recorte rectangular aproximado de Uruguay; "
+        "el área de estudio se define mediante coordenadas geográficas."))
+    tabla(["Parámetro", "Valor"], [
+        ["Latitud mínima / máxima", f"{lat_min:.4f} / {lat_max:.4f}"],
+        ["Longitud mínima / máxima", f"{lon_min:.4f} / {lon_max:.4f}"],
+        ["Período observado (UTC)", f"{fecha_min:%d/%m/%Y %H:%M} a {fecha_max:%d/%m/%Y %H:%M}"],
+        ["Registros en región", str(len(base_fase3))],
+    ], [6*cm, 10.9*cm])
+    seccion("3. Distribución por instrumento")
+    tabla(["Producto satelital", "Detecciones"], [
+        ["MODIS", str(int(conteo.get("MODIS", 0)))],
+        ["VIIRS NOAA-20", str(int(conteo.get("VIIRS NOAA-20", 0)))],
+        ["VIIRS S-NPP", str(int(conteo.get("VIIRS S-NPP", 0)))],
+        ["Total regional", str(len(base_fase3))],
+    ], [10*cm, 6.9*cm])
+
+    seccion("4. Metodología de correspondencias")
+    story.append(p(
+        "Se comparan detecciones MODIS y VIIRS por distancia geodésica aproximada "
+        "(fórmula de Haversine, radio terrestre de 6371,0088 km) y diferencia "
+        "absoluta de tiempo de adquisición en UTC. Un par candidato cumple "
+        "simultáneamente los umbrales espacial y temporal elegidos. "
+        "Una detección puede participar en varios pares; no se exige correspondencia uno a uno."
+    ))
+    story.append(p(
+        f"Parámetros interactivos de la Fase 2C: distancia ≤ {distancia_maxima:.1f} km "
+        f"y diferencia temporal ≤ {tiempo_maximo} minutos. "
+        f"Fase 2D: distancia ≤ {limite_km_2d:.1f} km "
+        f"y diferencia temporal ≤ {limite_min_2d} minutos."
+    ))
+    if "resultados_2c" in globals():
+        story.append(p(f"Pares candidatos en la Fase 2C: {len(resultados_2c)}."))
+    if "tabla_pares_2d" in globals():
+        story.append(p(
+            f"Fase 2D: {len(tabla_pares_2d)} pares candidatos; "
+            f"{modis_unicos} detecciones MODIS y {viirs_unicos} detecciones VIIRS "
+            "participan en al menos un par."
+        ))
+
+    seccion("5. Análisis de sensibilidad")
+    if not resumen_fase3.empty:
+        filas = []
+        for _, r in resumen_fase3.iterrows():
+            filas.append([
+                f"{float(r['Distancia_km']):g}", str(int(r["Tiempo_min"])),
+                str(int(r["Pares_candidatos"])),
+                str(int(r["MODIS_con"])), str(int(r["VIIRS_con"])),
+                f"{float(r['Cobertura_MODIS_pct']):.2f}%",
+                f"{float(r['Cobertura_VIIRS_pct']):.2f}%"
+            ])
+        tabla(["km", "min", "Pares", "MODIS con", "VIIRS con", "Cob. MODIS", "Cob. VIIRS"],
+              filas, [1.4*cm, 1.4*cm, 2.0*cm, 2.7*cm, 2.7*cm, 3.35*cm, 3.35*cm])
+        story.append(p(
+            "Los nueve escenarios usan 0,5, 1 y 2 km combinados con 30, 60 y "
+            "180 minutos. La cobertura indica proporción de detecciones con al menos "
+            "un par candidato, no precisión ni sensibilidad diagnóstica.", "IgnisNota"
+        ))
+    else:
+        story.append(p("No se pudo calcular sensibilidad: se requieren detecciones válidas de ambos sensores."))
+
+    seccion("6. Calendario de actividad térmica")
+    if "mes_cal" in globals() and "anio_elegido" in globals() and "mes_elegido" in globals():
+        story.append(p(
+            f"Mes seleccionado en la Fase 4: {mes_elegido:02d}/{anio_elegido}. "
+            f"Detecciones registradas: {len(mes_cal)}. "
+            f"Días con al menos una detección: {int((conteo_diario > 0).sum())}. "
+            f"Máximo diario: {int(conteo_diario.max()) if not conteo_diario.empty else 0}."
+        ))
+        diarios = mes_cal.groupby(["dia_utc", "producto"]).size().unstack(fill_value=0)
+        diarios["Total"] = diarios.sum(axis=1)
+        filas = []
+        for dia, r in diarios.iterrows():
+            filas.append([
+                dia.strftime("%d/%m/%Y"),
+                str(int(r.get("MODIS", 0))),
+                str(int(r.get("VIIRS NOAA-20", 0))),
+                str(int(r.get("VIIRS S-NPP", 0))),
+                str(int(r["Total"]))
+            ])
+        tabla(["Fecha UTC", "MODIS", "NOAA-20", "S-NPP", "Total"],
+              filas, [4.1*cm, 2.7*cm, 3.4*cm, 3.4*cm, 3.3*cm])
+    else:
+        story.append(p("No hay calendario disponible para la región seleccionada."))
+    story.append(p("Un día sin registros no demuestra ausencia de incendios; "
+        "la cobertura satelital y la disponibilidad de archivos pueden variar.", "IgnisNota"))
+
+    seccion("7. Conclusiones")
+    story.append(p(conclusion_fase3))
+    seccion("8. Limitaciones y alcance")
+    for linea in [
+        "El recorte nacional es rectangular y no representa la frontera administrativa exacta.",
+        "Las anomalías térmicas no equivalen a incendios individuales confirmados.",
+        "Los pares son candidatos y pueden incluir relaciones muchos-a-muchos.",
+        "No se dispone de validación independiente para estimar precisión o falsos positivos.",
+        "Las estadísticas dependen de los archivos cargados, los filtros y la cobertura satelital.",
+    ]:
+        story.append(p("• " + linea))
+    seccion("9. Referencia de datos y herramienta")
+    story.append(p("Datos: NASA FIRMS (Fire Information for Resource Management System), "
+        "productos MODIS y VIIRS, según los archivos suministrados. "
+        "Herramienta: IGNIS, prototipo exploratorio de armonización MODIS–VIIRS, "
+        "NASA Space Apps Challenge 2026."))
+
+    def pie(canvas, documento):
+        canvas.saveState()
+        canvas.setStrokeColor(colors.HexColor("#ccd7e1"))
+        canvas.line(1.8*cm, 1.35*cm, A4[0]-1.8*cm, 1.35*cm)
+        canvas.setFont(fuente, 7)
+        canvas.setFillColor(gris)
+        canvas.drawString(1.8*cm, 1.0*cm, "IGNIS | Informe exploratorio MODIS–VIIRS")
+        canvas.drawRightString(A4[0]-1.8*cm, 1.0*cm, f"Página {documento.page}")
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=pie, onLaterPages=pie)
+    return buf.getvalue()
+
+
+try:
+    pdf_ignis = construir_informe_pdf_ignis()
+    st.download_button(
+        "📄 Descargar informe científico completo (PDF)",
+        data=pdf_ignis,
+        file_name="IGNIS_informe_MODIS_VIIRS.pdf",
+        mime="application/pdf",
+        key="ignis_pdf_fase5"
+    )
+    st.caption("El informe refleja los archivos, la región y los parámetros actuales de la aplicación.")
+except Exception as error_pdf:
+    st.error(f"No se pudo generar el PDF: {error_pdf}")
+    st.info("Verificá que 'reportlab' esté incluido en requirements.txt.")
