@@ -2,3 +2,6 @@ streamlit
 pandas
 folium
 streamlit-folium
+numpy
+reportlab
+matplotlib
