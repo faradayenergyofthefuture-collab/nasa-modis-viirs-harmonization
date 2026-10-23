@@ -13,6 +13,15 @@ st.set_page_config(
     layout="wide"
 )
 
+# Identidad visual IGNIS: portada únicamente
+from pathlib import Path
+logo_ignis = Path(__file__).resolve().parent / "logo_ignis.png"
+if logo_ignis.exists():
+    _, columna_logo, _ = st.columns([2, 1, 2])
+    with columna_logo:
+        st.image(str(logo_ignis), use_container_width=True)
+    st.markdown('**IGNIS — Equipo del proyecto**')
+
 st.title("🛰️ Armonización MODIS–VIIRS")
 st.subheader("NASA Space Apps Challenge 2026")
 st.info(
