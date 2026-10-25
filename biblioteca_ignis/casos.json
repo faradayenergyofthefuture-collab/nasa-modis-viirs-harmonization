@@ -1,1 +1,58 @@
-[]
+[
+  {
+    "id": "cerro-del-toro-maldonado-2023-01",
+    "nombre": "Cerro del Toro – Maldonado",
+    "departamento": "Maldonado",
+    "fecha_inicio_utc": "2023-01-25 04:29:00+00:00",
+    "fecha_fin_utc": "2023-01-26 17:44:00+00:00",
+    "modis": 7,
+    "viirs_noaa20": 18,
+    "viirs_snpp": 21,
+    "total": 46,
+    "pares_1km_60min": 33,
+    "lat_min": -34.88,
+    "lat_max": -34.84,
+    "lon_min": -55.28,
+    "lon_max": -55.23,
+    "conclusion": "En Cerro del Toro – Maldonado se analizaron 46 detecciones térmicas. Con límites de 1 km y 60 minutos se encontraron 33 pares candidatos MODIS–VIIRS. El número de asociaciones depende de los límites espaciales y temporales. Estos resultados son exploratorios y no identifican incendios confirmados.",
+    "diario_utc": [
+      {
+        "fecha": "2023-01-25",
+        "modis": 5,
+        "viirs_noaa20": 10,
+        "viirs_snpp": 10
+      },
+      {
+        "fecha": "2023-01-26",
+        "modis": 2,
+        "viirs_noaa20": 8,
+        "viirs_snpp": 11
+      }
+    ]
+  },
+  {
+    "id": "durazno-2023-01-15",
+    "nombre": "Durazno – 15 de enero de 2023",
+    "departamento": "Durazno",
+    "diario_utc": [
+      {
+        "fecha": "2023-01-15",
+        "modis": 11,
+        "viirs_noaa20": 7,
+        "viirs_snpp": 10
+      }
+    ],
+    "fecha_inicio_utc": "2023-01-15 02:48:00+00:00",
+    "fecha_fin_utc": "2023-01-15 18:19:00+00:00",
+    "modis": 11,
+    "viirs_noaa20": 7,
+    "viirs_snpp": 10,
+    "total": 28,
+    "pares_1km_60min": 24,
+    "lat_min": -33.46,
+    "lat_max": -33.28,
+    "lon_min": -56.75,
+    "lon_max": -56.44,
+    "conclusion": "En Durazno – 15 de enero de 2023 se analizaron 28 detecciones térmicas. Con límites de 1 km y 60 minutos se encontraron 24 pares candidatos MODIS–VIIRS. El número de asociaciones depende de los límites espaciales y temporales. Estos resultados son exploratorios y no identifican incendios confirmados."
+  }
+]
