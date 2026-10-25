@@ -82,31 +82,32 @@ def mostrar_biblioteca(contexto):
     st.divider()
     st.header("Fase 6 - Biblioteca histórica IGNIS")
     st.write("Estudios históricos revisados por el equipo. Se conservan en el repositorio, no en la sesión temporal de Streamlit.")
-    st.subheader("Preparar ficha del análisis actual")
-    try:
-        df = contexto["base_fase3"]
-        conteo = contexto["conteo"]
-        tabla = contexto["resumen_fase3"]
-        pares = None
-        if not tabla.empty:
-            fila = tabla.loc[(tabla["Distancia_km"] == 1.0) & (tabla["Tiempo_min"] == 60)]
-            if not fila.empty:
-                pares = int(fila.iloc[0]["Pares_candidatos"])
-        ficha = {
-            "id": "caso-pendiente", "nombre": str(contexto["nombre_caso"]).strip() or "Área seleccionada",
-            "departamento": "Por verificar", "fecha_inicio_utc": str(contexto["fecha_min"]),
-            "fecha_fin_utc": str(contexto["fecha_max"]),
-            "modis": int(conteo.get("MODIS",0)), "viirs_noaa20": int(conteo.get("VIIRS NOAA-20",0)),
-            "viirs_snpp": int(conteo.get("VIIRS S-NPP",0)), "total": int(len(df)),
-            "pares_1km_60min": pares,
-            "lat_min": float(contexto["lat_min"]), "lat_max": float(contexto["lat_max"]),
-            "lon_min": float(contexto["lon_min"]), "lon_max": float(contexto["lon_max"]),
-            "conclusion": str(contexto["conclusion_fase3"]),
-        }
-        st.download_button("📥 Descargar ficha JSON del análisis actual", json.dumps(ficha, ensure_ascii=False, indent=2).encode("utf-8"), file_name="ignis_ficha_para_revision.json", mime="application/json", key="ignis_f6_ficha")
-        st.caption("La ficha no se guarda automáticamente. Revisá el nombre, departamento, fechas y límites; incorporala a casos.json mediante GitHub después de validarla.")
-    except (KeyError, ValueError, TypeError) as e:
-        st.warning(f"No se pudo preparar la ficha: {e}")
+    if contexto is not None:
+        st.subheader("Preparar ficha del análisis actual")
+        try:
+            df = contexto["base_fase3"]
+            conteo = contexto["conteo"]
+            tabla = contexto["resumen_fase3"]
+            pares = None
+            if not tabla.empty:
+                fila = tabla.loc[(tabla["Distancia_km"] == 1.0) & (tabla["Tiempo_min"] == 60)]
+                if not fila.empty:
+                    pares = int(fila.iloc[0]["Pares_candidatos"])
+            ficha = {
+                "id": "caso-pendiente", "nombre": str(contexto["nombre_caso"]).strip() or "Área seleccionada",
+                "departamento": "Por verificar", "fecha_inicio_utc": str(contexto["fecha_min"]),
+                "fecha_fin_utc": str(contexto["fecha_max"]),
+                "modis": int(conteo.get("MODIS",0)), "viirs_noaa20": int(conteo.get("VIIRS NOAA-20",0)),
+                "viirs_snpp": int(conteo.get("VIIRS S-NPP",0)), "total": int(len(df)),
+                "pares_1km_60min": pares,
+                "lat_min": float(contexto["lat_min"]), "lat_max": float(contexto["lat_max"]),
+                "lon_min": float(contexto["lon_min"]), "lon_max": float(contexto["lon_max"]),
+                "conclusion": str(contexto["conclusion_fase3"]),
+            }
+            st.download_button("📥 Descargar ficha JSON del análisis actual", json.dumps(ficha, ensure_ascii=False, indent=2).encode("utf-8"), file_name="ignis_ficha_para_revision.json", mime="application/json", key="ignis_f6_ficha")
+            st.caption("La ficha no se guarda automáticamente. Revisá el nombre, departamento, fechas y límites; incorporala a casos.json mediante GitHub después de validarla.")
+        except (KeyError, ValueError, TypeError) as e:
+            st.warning(f"No se pudo preparar la ficha: {e}")
     st.subheader("Consultar casos publicados")
     casos, error = _leer_casos()
     if error:
