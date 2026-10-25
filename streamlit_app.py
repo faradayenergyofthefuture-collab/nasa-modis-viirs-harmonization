@@ -37,7 +37,9 @@ archivos = st.file_uploader(
 
 # El análisis necesita archivos para ejecutar todas sus fases.
 if not archivos:
-    st.info("Cargá archivos NASA FIRMS para iniciar el estudio en Uruguay.")
+    st.info("Podés consultar la biblioteca histórica sin cargar archivos NASA FIRMS.")
+    from ignis_biblioteca import mostrar_biblioteca
+    mostrar_biblioteca(None)
     st.stop()
 
 def leer_archivo(archivo):
@@ -1566,3 +1568,22 @@ try:
 except Exception as error_pdf:
     st.error(f"No se pudo generar el PDF: {error_pdf}")
     st.info("Verificá que 'reportlab' esté incluido en requirements.txt.")
+
+
+# ============================================================
+# FASE 6 - BIBLIOTECA HISTÓRICA IGNIS
+# ============================================================
+from ignis_biblioteca import mostrar_biblioteca
+mostrar_biblioteca({
+    "base_fase3": base_fase3,
+    "conteo": conteo,
+    "resumen_fase3": resumen_fase3,
+    "nombre_caso": nombre_caso,
+    "fecha_min": fecha_min,
+    "fecha_max": fecha_max,
+    "lat_min": lat_min,
+    "lat_max": lat_max,
+    "lon_min": lon_min,
+    "lon_max": lon_max,
+    "conclusion_fase3": conclusion_fase3,
+})
