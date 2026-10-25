@@ -2,7 +2,7 @@
 import io
 import json
 import calendar
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -96,10 +96,19 @@ def _tabla_calendario(caso, anio, mes, estilos):
 
 def _meses_del_caso(caso):
     """Muestra enero y febrero de 2023 si pertenecen al estudio; otros meses si corresponden."""
-    diarios = caso.get("diario_utc", [])
-    if diarios:
-        return sorted({(int(d["fecha"][:4]),int(d["fecha"][5:7])) for d in diarios})
-    return []
+    # Incluir todos los meses entre primera y última detección, incluso sin registros.
+    try:
+        inicio = pd.to_datetime(caso["fecha_inicio_utc"], utc=True)
+        fin = pd.to_datetime(caso["fecha_fin_utc"], utc=True)
+        if pd.isna(inicio) or pd.isna(fin) or fin < inicio:
+            return []
+        periodos = pd.period_range(inicio.tz_localize(None).to_period("M"),
+                                   fin.tz_localize(None).to_period("M"), freq="M")
+        if len(periodos) > 24:
+            return []
+        return [(x.year, x.month) for x in periodos]
+    except (KeyError, ValueError, TypeError):
+        return []
 
 
 def _pdf_historico(casos):
@@ -210,17 +219,36 @@ def mostrar_biblioteca(contexto):
                 "conclusion": str(contexto["conclusion_fase3"]),
             }
             st.subheader("Calendario del análisis actual (UTC)")
-            meses = sorted({(int(d["fecha"][:4]), int(d["fecha"][5:7])) for d in diario_utc})
+            meses = _meses_del_caso(ficha)
+            indice = {d["fecha"]: d for d in diario_utc}
             for anio, mes in meses:
                 st.markdown(f"**{calendar.month_name[mes]} {anio}**")
-                filas = [d for d in diario_utc if d["fecha"].startswith(f"{anio:04d}-{mes:02d}")]
-                st.dataframe(pd.DataFrame([{"Fecha UTC": d["fecha"], "MODIS": d["modis"],
-                    "VIIRS NOAA-20": d["viirs_noaa20"], "VIIRS S-NPP": d["viirs_snpp"],
-                    "Total": d["modis"] + d["viirs_noaa20"] + d["viirs_snpp"]} for d in filas]),
-                    use_container_width=True, hide_index=True)
-            st.caption("El calendario recoge los días presentes en los archivos filtrados; los demás días no demuestran ausencia de incendios.")
+                filas = []
+                for dia in range(1, calendar.monthrange(anio, mes)[1] + 1):
+                    fecha_dia = f"{anio:04d}-{mes:02d}-{dia:02d}"
+                    d = indice.get(fecha_dia, {})
+                    m = int(d.get("modis", 0))
+                    n = int(d.get("viirs_noaa20", 0))
+                    v = int(d.get("viirs_snpp", 0))
+                    filas.append({"Fecha UTC": fecha_dia, "MODIS": m,
+                                  "VIIRS NOAA-20": n, "VIIRS S-NPP": v,
+                                  "Total": m + n + v})
+                st.dataframe(pd.DataFrame(filas), use_container_width=True, hide_index=True)
+            st.caption("Cero significa que no hay registros en los archivos analizados para ese día; no confirma ausencia de incendios.")
             st.download_button("📥 Descargar ficha JSON del análisis actual", json.dumps(ficha, ensure_ascii=False, indent=2).encode("utf-8"), file_name="ignis_ficha_para_revision.json", mime="application/json", key="ignis_f6_ficha")
             st.caption("La ficha no se guarda automáticamente. Revisá el nombre, departamento, fechas y límites; incorporala a casos.json mediante GitHub después de validarla.")
+            st.subheader("Informe PDF del análisis actual")
+            st.caption("Vista previa individual: incluye logo, metodología, recuentos y calendario. No publica automáticamente el caso.")
+            if not departamento.strip():
+                st.warning("Indicá el departamento para habilitar el PDF individual.")
+            else:
+                try:
+                    pdf_actual = _pdf_historico([ficha])
+                    st.download_button("📄 Descargar informe histórico individual (PDF)",
+                        data=pdf_actual, file_name="IGNIS_informe_historico_individual.pdf",
+                        mime="application/pdf", key="ignis_f6_pdf_actual")
+                except Exception as error:
+                    st.error(f"No se pudo preparar el PDF individual: {error}")
         except (KeyError, ValueError, TypeError) as e:
             st.warning(f"No se pudo preparar la ficha: {e}")
     st.subheader("Consultar casos publicados")
@@ -240,5 +268,8 @@ def mostrar_biblioteca(contexto):
         st.subheader("Calendario diario del expediente (UTC)")
         st.dataframe(pd.DataFrame(c["diario_utc"]), use_container_width=True, hide_index=True)
     st.caption(f"Período observado (UTC): {c['fecha_inicio_utc']} a {c['fecha_fin_utc']}. Recorte rectangular: {c['lat_min']} a {c['lat_max']} lat.; {c['lon_min']} a {c['lon_max']} lon.")
-    st.download_button("📄 Descargar informe histórico comparativo (PDF)", _pdf_historico(casos), file_name="IGNIS_biblioteca_historica.pdf", mime="application/pdf", key="ignis_f6_pdf")
+    try:
+        st.download_button("📄 Descargar informe histórico comparativo (PDF)", _pdf_historico(casos), file_name="IGNIS_biblioteca_historica.pdf", mime="application/pdf", key="ignis_f6_pdf")
+    except Exception as error:
+        st.error(f"No se pudo generar el PDF comparativo: {error}")
     st.caption("Comparación descriptiva. Los conteos no están normalizados por cobertura satelital ni representan incendios confirmados.")
