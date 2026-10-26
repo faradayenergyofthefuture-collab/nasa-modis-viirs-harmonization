@@ -1524,6 +1524,22 @@ def construir_informe_pdf_ignis():
     story.append(p("Un día sin registros no demuestra ausencia de incendios; "
         "la cobertura satelital y la disponibilidad de archivos pueden variar.", "IgnisNota"))
 
+    seccion("6B. Patrones temporales y períodos destacados")
+    from ignis_biblioteca import analizar_actividad_diaria, _resumen_actividad
+    datos_patrones = base_fase3.copy()
+    datos_patrones["_dia_utc"] = pd.to_datetime(datos_patrones["fecha_hora_utc"], utc=True).dt.strftime("%Y-%m-%d")
+    conteos_patrones = datos_patrones.groupby(["_dia_utc", "producto"]).size().unstack(fill_value=0)
+    ficha_patrones = {"diario_utc": [
+        {"fecha": str(dia), "modis": int(r.get("MODIS", 0)),
+         "viirs_noaa20": int(r.get("VIIRS NOAA-20", 0)),
+         "viirs_snpp": int(r.get("VIIRS S-NPP", 0))}
+        for dia, r in conteos_patrones.iterrows()],
+        "modis": int(conteo.get("MODIS", 0)),
+        "viirs_noaa20": int(conteo.get("VIIRS NOAA-20", 0)),
+        "viirs_snpp": int(conteo.get("VIIRS S-NPP", 0))}
+    story.append(p(_resumen_actividad(ficha_patrones)))
+    story.append(p("Estos indicadores describen registros de los archivos cargados, no intensidad de fuego ni incendios confirmados.", "IgnisNota"))
+
     seccion("7. Conclusiones")
     story.append(p(conclusion_fase3))
     seccion("8. Limitaciones y alcance")
