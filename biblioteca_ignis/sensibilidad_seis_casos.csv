@@ -1,0 +1,55 @@
+caso,distancia_km,tiempo_min,pares_candidatos,modis_con,viirs_con,modis_total,viirs_total
+Cerro del Toro – Maldonado,0.5,30,10,5,10,7,39
+Cerro del Toro – Maldonado,0.5,60,10,5,10,7,39
+Cerro del Toro – Maldonado,0.5,180,12,7,12,7,39
+Cerro del Toro – Maldonado,1.0,30,33,6,12,7,39
+Cerro del Toro – Maldonado,1.0,60,33,6,12,7,39
+Cerro del Toro – Maldonado,1.0,180,39,7,17,7,39
+Cerro del Toro – Maldonado,2.0,30,44,6,12,7,39
+Cerro del Toro – Maldonado,2.0,60,44,6,12,7,39
+Cerro del Toro – Maldonado,2.0,180,52,7,19,7,39
+Durazno – 15 de enero de 2023,0.5,30,5,2,4,11,17
+Durazno – 15 de enero de 2023,0.5,60,9,2,7,11,17
+Durazno – 15 de enero de 2023,0.5,180,18,6,13,11,17
+Durazno – 15 de enero de 2023,1.0,30,12,3,7,11,17
+Durazno – 15 de enero de 2023,1.0,60,24,4,13,11,17
+Durazno – 15 de enero de 2023,1.0,180,51,9,15,11,17
+Durazno – 15 de enero de 2023,2.0,30,14,4,7,11,17
+Durazno – 15 de enero de 2023,2.0,60,26,4,13,11,17
+Durazno – 15 de enero de 2023,2.0,180,67,9,15,11,17
+Artigas – 17/01/2023,0.5,30,3,1,3,3,36
+Artigas – 17/01/2023,0.5,60,5,1,5,3,36
+Artigas – 17/01/2023,0.5,180,9,2,9,3,36
+Artigas – 17/01/2023,1.0,30,6,2,4,3,36
+Artigas – 17/01/2023,1.0,60,9,2,7,3,36
+Artigas – 17/01/2023,1.0,180,25,3,22,3,36
+Artigas – 17/01/2023,2.0,30,8,2,4,3,36
+Artigas – 17/01/2023,2.0,60,16,2,8,3,36
+Artigas – 17/01/2023,2.0,180,42,3,33,3,36
+Canelones (zona de Atlántida),0.5,30,9,4,9,4,50
+Canelones (zona de Atlántida),0.5,60,16,4,16,4,50
+Canelones (zona de Atlántida),0.5,180,16,4,16,4,50
+Canelones (zona de Atlántida),1.0,30,26,4,16,4,50
+Canelones (zona de Atlántida),1.0,60,51,4,32,4,50
+Canelones (zona de Atlántida),1.0,180,51,4,32,4,50
+Canelones (zona de Atlántida),2.0,30,55,4,16,4,50
+Canelones (zona de Atlántida),2.0,60,114,4,33,4,50
+Canelones (zona de Atlántida),2.0,180,114,4,33,4,50
+Lavalleja – 09/02/2023,0.5,30,1,1,1,11,33
+Lavalleja – 09/02/2023,0.5,60,2,1,2,11,33
+Lavalleja – 09/02/2023,0.5,180,16,5,15,11,33
+Lavalleja – 09/02/2023,1.0,30,5,1,5,11,33
+Lavalleja – 09/02/2023,1.0,60,14,1,14,11,33
+Lavalleja – 09/02/2023,1.0,180,60,8,26,11,33
+Lavalleja – 09/02/2023,2.0,30,10,1,10,11,33
+Lavalleja – 09/02/2023,2.0,60,27,2,26,11,33
+Lavalleja – 09/02/2023,2.0,180,155,9,31,11,33
+Treinta y Tres – 15/01/2023,0.5,30,1,1,1,4,91
+Treinta y Tres – 15/01/2023,0.5,60,1,1,1,4,91
+Treinta y Tres – 15/01/2023,0.5,180,3,3,3,4,91
+Treinta y Tres – 15/01/2023,1.0,30,12,3,8,4,91
+Treinta y Tres – 15/01/2023,1.0,60,12,3,8,4,91
+Treinta y Tres – 15/01/2023,1.0,180,18,4,13,4,91
+Treinta y Tres – 15/01/2023,2.0,30,16,3,10,4,91
+Treinta y Tres – 15/01/2023,2.0,60,18,3,12,4,91
+Treinta y Tres – 15/01/2023,2.0,180,29,4,19,4,91
