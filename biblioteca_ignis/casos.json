@@ -54,5 +54,147 @@
     "lon_min": -56.75,
     "lon_max": -56.44,
     "conclusion": "En Durazno – 15 de enero de 2023 se analizaron 28 detecciones térmicas. Con límites de 1 km y 60 minutos se encontraron 24 pares candidatos MODIS–VIIRS. El número de asociaciones depende de los límites espaciales y temporales. Estos resultados son exploratorios y no identifican incendios confirmados."
+  },
+  {
+    "id": "artigas-2023-01-17",
+    "nombre": "Artigas – 17/01/2023",
+    "departamento": "Artigas",
+    "fecha_inicio_utc": "2023-01-17 02:33:00+00:00",
+    "fecha_fin_utc": "2023-02-01 04:45:00+00:00",
+    "modis": 3,
+    "viirs_noaa20": 15,
+    "viirs_snpp": 21,
+    "total": 39,
+    "pares_1km_60min": 9,
+    "lat_min": -30.505,
+    "lat_max": -30.443,
+    "lon_min": -56.576,
+    "lon_max": -56.499,
+    "conclusion": "En Artigas – 17/01/2023 se analizaron 39 detecciones térmicas. Con límites de 1 km y 60 minutos se encontraron 9 pares candidatos MODIS–VIIRS. El número de asociaciones depende de los límites espaciales y temporales. Estos resultados son exploratorios y no identifican incendios confirmados.",
+    "diario_utc": [
+      {
+        "fecha": "2023-01-17",
+        "modis": 3,
+        "viirs_noaa20": 14,
+        "viirs_snpp": 21
+      },
+      {
+        "fecha": "2023-02-01",
+        "modis": 0,
+        "viirs_noaa20": 1,
+        "viirs_snpp": 0
+      }
+    ]
+  },
+  {
+    "id": "canelones-atlantida-2023-01",
+    "nombre": "Canelones (zona de Atlántida)",
+    "departamento": "Canelones",
+    "fecha_inicio_utc": "2023-01-08 03:56:00+00:00",
+    "fecha_fin_utc": "2023-01-25 04:29:00+00:00",
+    "modis": 4,
+    "viirs_noaa20": 26,
+    "viirs_snpp": 24,
+    "total": 54,
+    "pares_1km_60min": 51,
+    "lat_min": -34.788,
+    "lat_max": -34.724,
+    "lon_min": -55.89,
+    "lon_max": -55.81,
+    "conclusion": "En Canelones (zona de Atlántida) se analizaron 54 detecciones térmicas. Con límites de 1 km y 60 minutos se encontraron 51 pares candidatos MODIS–VIIRS. El número de asociaciones depende de los límites espaciales y temporales. Estos resultados son exploratorios y no identifican incendios confirmados.",
+    "diario_utc": [
+      {
+        "fecha": "2023-01-08",
+        "modis": 4,
+        "viirs_noaa20": 26,
+        "viirs_snpp": 23
+      },
+      {
+        "fecha": "2023-01-25",
+        "modis": 0,
+        "viirs_noaa20": 0,
+        "viirs_snpp": 1
+      }
+    ]
+  },
+  {
+    "id": "lavalleja-2023-02-09",
+    "nombre": "Lavalleja – 09/02/2023",
+    "departamento": "Lavalleja",
+    "fecha_inicio_utc": "2023-02-09 01:56:00+00:00",
+    "fecha_fin_utc": "2023-02-10 04:29:00+00:00",
+    "modis": 11,
+    "viirs_noaa20": 16,
+    "viirs_snpp": 17,
+    "total": 44,
+    "pares_1km_60min": 14,
+    "lat_min": -34.116,
+    "lat_max": -34.044,
+    "lon_min": -54.94,
+    "lon_max": -54.842,
+    "conclusion": "En Lavalleja – 09/02/2023 se analizaron 44 detecciones térmicas. Con límites de 1 km y 60 minutos se encontraron 14 pares candidatos MODIS–VIIRS. El número de asociaciones depende de los límites espaciales y temporales. Estos resultados son exploratorios y no identifican incendios confirmados.",
+    "diario_utc": [
+      {
+        "fecha": "2023-02-09",
+        "modis": 11,
+        "viirs_noaa20": 16,
+        "viirs_snpp": 16
+      },
+      {
+        "fecha": "2023-02-10",
+        "modis": 0,
+        "viirs_noaa20": 0,
+        "viirs_snpp": 1
+      }
+    ]
+  },
+  {
+    "id": "treinta-y-tres-2023-01-15",
+    "nombre": "Treinta y Tres – 15/01/2023",
+    "departamento": "Treinta y Tres",
+    "fecha_inicio_utc": "2023-01-14 16:57:00+00:00",
+    "fecha_fin_utc": "2023-02-12 04:39:00+00:00",
+    "modis": 4,
+    "viirs_noaa20": 32,
+    "viirs_snpp": 59,
+    "total": 95,
+    "pares_1km_60min": 12,
+    "lat_min": -32.985,
+    "lat_max": -32.879,
+    "lon_min": -54.069,
+    "lon_max": -53.92,
+    "conclusion": "En Treinta y Tres – 15/01/2023 se analizaron 95 detecciones térmicas. Con límites de 1 km y 60 minutos se encontraron 12 pares candidatos MODIS–VIIRS. El número de asociaciones depende de los límites espaciales y temporales. Estos resultados son exploratorios y no identifican incendios confirmados.",
+    "diario_utc": [
+      {
+        "fecha": "2023-01-14",
+        "modis": 0,
+        "viirs_noaa20": 0,
+        "viirs_snpp": 1
+      },
+      {
+        "fecha": "2023-01-15",
+        "modis": 2,
+        "viirs_noaa20": 21,
+        "viirs_snpp": 38
+      },
+      {
+        "fecha": "2023-01-16",
+        "modis": 2,
+        "viirs_noaa20": 6,
+        "viirs_snpp": 17
+      },
+      {
+        "fecha": "2023-01-17",
+        "modis": 0,
+        "viirs_noaa20": 4,
+        "viirs_snpp": 3
+      },
+      {
+        "fecha": "2023-02-12",
+        "modis": 0,
+        "viirs_noaa20": 1,
+        "viirs_snpp": 0
+      }
+    ]
   }
 ]
