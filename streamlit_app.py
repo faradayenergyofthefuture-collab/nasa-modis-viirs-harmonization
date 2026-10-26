@@ -55,13 +55,30 @@ def leer_archivo(archivo):
     return tablas
 
 def identificar_producto(nombre):
-    nombre = nombre.lower()
-    if "j1v" in nombre or "noaa20" in nombre:
-        return "VIIRS NOAA-20"
-    if "sv" in nombre or "snpp" in nombre:
-        return "VIIRS S-NPP"
-    if "m-c61" in nombre or "modis" in nombre:
+    """Identifica productos NASA FIRMS usando nombres de CSV internos."""
+    nombre = str(nombre).lower()
+    if "m-c61" in nombre or "modis" in nombre or "mcd14" in nombre:
         return "MODIS"
+    if "j1v" in nombre or "noaa20" in nombre or "noaa-20" in nombre:
+        return "VIIRS NOAA-20"
+    if "sv-c2" in nombre or "snpp" in nombre or "s-npp" in nombre:
+        return "VIIRS S-NPP"
+    return "Sin identificar"
+
+
+def identificar_por_metadatos(tabla):
+    """Segundo control independiente basado en instrument y satellite."""
+    if "instrument" not in tabla.columns:
+        return "Sin identificar"
+    instrumento = tabla["instrument"].astype(str).str.upper().str.strip()
+    if instrumento.eq("MODIS").all():
+        return "MODIS"
+    if instrumento.isin(["VIIRS", "SNPP"]).all() and "satellite" in tabla.columns:
+        sat = tabla["satellite"].astype(str).str.upper().str.strip()
+        if sat.isin(["N20", "NOAA-20", "J1"]).all():
+            return "VIIRS NOAA-20"
+        if sat.isin(["SNPP", "S-NPP", "NPP"]).all():
+            return "VIIRS S-NPP"
     return "Sin identificar"
 
 if archivos:
@@ -76,14 +93,18 @@ if archivos:
                     )
                     continue
 
-                if "producto" not in tabla.columns:
-                    tabla["producto"] = identificar_producto(
-                        nombre_origen
-                    )
-
-                if tabla["producto"].eq("Sin identificar").any():
-                    st.warning(f"{nombre_origen}: producto no identificado; se omite para evitar mezclar sensores.")
+                # Dos controles: CSV interno y metadatos instrument/satellite.
+                producto_nombre = identificar_producto(nombre_origen)
+                producto_meta = identificar_por_metadatos(tabla)
+                if producto_meta != "Sin identificar" and producto_nombre != "Sin identificar" and producto_meta != producto_nombre:
+                    st.error(f"Conflicto de sensor en {nombre_origen}: nombre={producto_nombre}, metadatos={producto_meta}. Archivo omitido.")
                     continue
+                producto_detectado = producto_meta if producto_meta != "Sin identificar" else producto_nombre
+                if producto_detectado == "Sin identificar":
+                    st.warning(f"{nombre_origen}: no se pudo identificar el sensor; archivo omitido.")
+                    continue
+                tabla["producto"] = producto_detectado
+                st.caption(f"Archivo leído: {nombre_origen} | {len(tabla)} registros | {producto_detectado}")
                 tabla["archivo_origen"] = nombre_origen
                 tablas.append(tabla)
 
@@ -144,6 +165,14 @@ if archivos:
             "Productos identificados",
             datos["producto"].nunique()
         )
+
+        # Control explícito de integridad de sensores antes de interpretar resultados.
+        sensores_presentes = set(datos["producto"].dropna().unique())
+        if "MODIS" not in sensores_presentes:
+            st.error("FALTA MODIS EN LOS DATOS CARGADOS. Revisá que hayas subido DL_FIRE_M-C61_...zip. Los resultados siguientes son solo VIIRS y NO permiten una comparación MODIS–VIIRS.")
+        if not ({"VIIRS NOAA-20", "VIIRS S-NPP"} & sensores_presentes):
+            st.error("FALTA VIIRS EN LOS DATOS CARGADOS. No se puede realizar la comparación MODIS–VIIRS.")
+        st.caption("Control de archivos: el informe histórico es independiente y no garantiza que los ZIP actuales incluyan los tres productos.")
 
         st.subheader("Detecciones por producto")
         st.dataframe(
@@ -1597,20 +1626,22 @@ def construir_informe_pdf_ignis():
     return buf.getvalue()
 
 
-try:
-    pdf_ignis = construir_informe_pdf_ignis()
-    st.download_button(
-        "📄 Descargar informe científico completo (PDF)",
-        data=pdf_ignis,
-        file_name="IGNIS_informe_MODIS_VIIRS.pdf",
-        mime="application/pdf",
-        key="ignis_pdf_fase5"
-    )
-    st.caption("El informe refleja los archivos, la región y los parámetros actuales de la aplicación.")
-except Exception as error_pdf:
-    st.error(f"No se pudo generar el PDF: {error_pdf}")
-    st.info("Verificá que 'reportlab' esté incluido en requirements.txt.")
-
+if not ("MODIS" in set(base_fase3["producto"]) and base_fase3["producto"].astype(str).str.contains("VIIRS").any()):
+    st.warning("PDF comparativo MODIS–VIIRS deshabilitado: faltan detecciones de uno de los instrumentos en la región elegida. Podés revisar el CSV y ampliar la región o cargar los ZIP faltantes.")
+else:
+    try:
+        pdf_ignis = construir_informe_pdf_ignis()
+        st.download_button(
+            "📄 Descargar informe científico completo (PDF)",
+            data=pdf_ignis,
+            file_name="IGNIS_informe_MODIS_VIIRS.pdf",
+            mime="application/pdf",
+            key="ignis_pdf_fase5"
+        )
+        st.caption("El informe refleja los archivos, la región y los parámetros actuales de la aplicación.")
+    except Exception as error_pdf:
+        st.error(f"No se pudo generar el PDF: {error_pdf}")
+        st.info("Verificá que 'reportlab' esté incluido en requirements.txt.")
 
 # ============================================================
 # FASE 6 - BIBLIOTECA HISTÓRICA IGNIS
