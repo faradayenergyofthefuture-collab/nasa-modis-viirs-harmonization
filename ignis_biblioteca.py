@@ -153,7 +153,7 @@ def _resumen_actividad(caso):
     return (f"Máximo diario: {a['maximo']} registros ({picos}, UTC). "
             f"Días con detecciones: {a['dias_activos']}. "
             f"Mayor racha de días consecutivos con registros: {a['racha_maxima']} "
-            f"({rachas}). Distribución del período: MODIS {a['por_sensor']['modis']}, "
+            f"(período(s) de racha máxima: {rachas}). Distribución del período: MODIS {a['por_sensor']['modis']}, "
             f"VIIRS NOAA-20 {a['por_sensor']['viirs_noaa20']}, "
             f"VIIRS S-NPP {a['por_sensor']['viirs_snpp']}.")
 
@@ -176,7 +176,11 @@ def _datos_verificados(caso):
             return None, None
         t = pd.read_csv(DATOS_SENSIBILIDAD)
         t = t.loc[t["caso"] == caso["nombre"]].sort_values(["distancia_km", "tiempo_min"])
-        if len(t) != 9 or int(fila["pares_recalculados"]) != int(caso["pares_1km_60min"]):
+        if (len(t) != 9 or int(fila["pares_recalculados"]) != int(caso["pares_1km_60min"])
+            or int(fila["total"]) != int(caso["total"])
+            or any(int(fila[k]) != int(caso[c]) for k,c in (("modis","modis"),("noaa20","viirs_noaa20"),("snpp","viirs_snpp")))
+            or set(zip(t["distancia_km"].round(2),t["tiempo_min"])) != {(d,m) for d in (0.5,1.0,2.0) for m in (30,60,180)}
+            or int(t.loc[(t["distancia_km"] == 1.0) & (t["tiempo_min"] == 60), "pares_candidatos"].iloc[0]) != int(caso["pares_1km_60min"])):
             return None, None
         return fila, t
     except (OSError, KeyError, ValueError, TypeError):
@@ -244,7 +248,7 @@ def _pdf_historico(casos):
        ("TEXTCOLOR",(0,0),(-1,0),colors.white),("GRID",(0,0),(-1,-1),.3,colors.lightgrey),
        ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#edf3f8")]),
        ("VALIGN",(0,0),(-1,-1),"TOP"),("FONTSIZE",(0,0),(-1,-1),8)]))
-    story += [tv,Paragraph("Verificación computacional frente a los CSV originales NASA FIRMS. No constituye validación independiente de incendios ni de umbrales óptimos.",styles["IgnisBody"])]
+    story += [tv,Paragraph("Comprobación de consistencia computacional documentada en CSV de validación y sensibilidad. No constituye validación independiente de incendios ni de umbrales óptimos.",styles["IgnisBody"])]
     for i,c in enumerate(casos,1):
         story += [PageBreak(),Paragraph(f"Caso {i}: {_texto(c['nombre'])}",styles["IgnisHead"]),
           Paragraph(f"Departamento: {_texto(c['departamento'])}. Período de detecciones (UTC): {_texto(c['fecha_inicio_utc'])} a {_texto(c['fecha_fin_utc'])}.",styles["IgnisBody"]),
@@ -359,18 +363,7 @@ def mostrar_biblioteca(contexto):
             st.caption("Cero significa que no hay registros en los archivos analizados para ese día; no confirma ausencia de incendios.")
             st.download_button("📥 Descargar ficha JSON del análisis actual", json.dumps(ficha, ensure_ascii=False, indent=2).encode("utf-8"), file_name="ignis_ficha_para_revision.json", mime="application/json", key="ignis_f6_ficha")
             st.caption("La ficha no se guarda automáticamente. Revisá el nombre, departamento, fechas y límites; incorporala a casos.json mediante GitHub después de validarla.")
-            st.subheader("Informe PDF del análisis actual")
-            st.caption("Vista previa individual: incluye logo, metodología, recuentos y calendario. No publica automáticamente el caso.")
-            if not departamento.strip():
-                st.warning("Indicá el departamento para habilitar el PDF individual.")
-            else:
-                try:
-                    pdf_actual = _pdf_historico([ficha])
-                    st.download_button("📄 Descargar informe histórico individual (PDF)",
-                        data=pdf_actual, file_name="IGNIS_informe_historico_individual.pdf",
-                        mime="application/pdf", key="ignis_f6_pdf_actual")
-                except Exception as error:
-                    st.error(f"No se pudo preparar el PDF individual: {error}")
+            st.info("El PDF científico completo del análisis actual se descarga en la Fase 5. Esta sección prepara la ficha JSON; evita generar un segundo PDF parcial o sin verificación histórica.")
         except (KeyError, ValueError, TypeError) as e:
             st.warning(f"No se pudo preparar la ficha: {e}")
     st.subheader("Consultar casos publicados")
