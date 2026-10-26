@@ -44,14 +44,14 @@ if not archivos:
 
 def leer_archivo(archivo):
     if archivo.name.lower().endswith(".csv"):
-        return [pd.read_csv(archivo)]
+        return [(pd.read_csv(archivo), archivo.name)]
 
     tablas = []
     with zipfile.ZipFile(BytesIO(archivo.getvalue())) as z:
         for nombre in z.namelist():
             if nombre.lower().endswith(".csv"):
                 with z.open(nombre) as f:
-                    tablas.append(pd.read_csv(f))
+                    tablas.append((pd.read_csv(f), nombre))
     return tablas
 
 def identificar_producto(nombre):
@@ -69,7 +69,7 @@ if archivos:
 
     for archivo in archivos:
         try:
-            for tabla in leer_archivo(archivo):
+            for tabla, nombre_origen in leer_archivo(archivo):
                 if not {"latitude", "longitude"}.issubset(tabla.columns):
                     st.warning(
                         f"{archivo.name}: faltan coordenadas."
@@ -78,9 +78,13 @@ if archivos:
 
                 if "producto" not in tabla.columns:
                     tabla["producto"] = identificar_producto(
-                        archivo.name
+                        nombre_origen
                     )
 
+                if tabla["producto"].eq("Sin identificar").any():
+                    st.warning(f"{nombre_origen}: producto no identificado; se omite para evitar mezclar sensores.")
+                    continue
+                tabla["archivo_origen"] = nombre_origen
                 tablas.append(tabla)
 
         except Exception as e:
@@ -1524,6 +1528,21 @@ def construir_informe_pdf_ignis():
     story.append(p("Un día sin registros no demuestra ausencia de incendios; "
         "la cobertura satelital y la disponibilidad de archivos pueden variar.", "IgnisNota"))
 
+    seccion("6A. Serie diaria completa del período analizado (UTC)")
+    diario_completo = base_fase3.copy()
+    diario_completo["_dia_utc"] = pd.to_datetime(diario_completo["fecha_hora_utc"], utc=True).dt.strftime("%Y-%m-%d")
+    diario_completo = diario_completo.groupby(["_dia_utc", "producto"]).size().unstack(fill_value=0).sort_index()
+    filas_diarias = []
+    for fecha_dia, r in diario_completo.iterrows():
+        m, n, v = (int(r.get(k, 0)) for k in ("MODIS", "VIIRS NOAA-20", "VIIRS S-NPP"))
+        filas_diarias.append([fecha_dia, str(m), str(n), str(v), str(m+n+v)])
+    if filas_diarias:
+        tabla(["Día UTC", "MODIS", "NOAA-20", "S-NPP", "Total"], filas_diarias,
+              [4.1*cm, 2.7*cm, 3.4*cm, 3.4*cm, 3.3*cm])
+        story.append(p("La tabla contiene todos los días con detecciones en los archivos analizados, no solamente el mes elegido en pantalla. Los días omitidos no tienen registros en la muestra.", "IgnisNota"))
+    else:
+        story.append(p("No hay registros diarios válidos."))
+
     seccion("6B. Patrones temporales y períodos destacados")
     from ignis_biblioteca import analizar_actividad_diaria, _resumen_actividad
     datos_patrones = base_fase3.copy()
@@ -1540,6 +1559,13 @@ def construir_informe_pdf_ignis():
     story.append(p(_resumen_actividad(ficha_patrones)))
     story.append(p("Estos indicadores describen registros de los archivos cargados, no intensidad de fuego ni incendios confirmados.", "IgnisNota"))
 
+    seccion("6C. Trazabilidad de archivos y calidad de los datos")
+    if "archivo_origen" in base_fase3.columns:
+        fuentes = base_fase3.groupby(["archivo_origen", "producto"]).size().reset_index(name="n")
+        tabla(["Archivo CSV original", "Producto", "Registros en región"],
+              [[str(r["archivo_origen"]), str(r["producto"]), str(int(r["n"]))] for _,r in fuentes.iterrows()],
+              [7.4*cm, 5.5*cm, 4.0*cm])
+    story.append(p("Los valores de FRP, brillo, confianza y otras propiedades FIRMS dependen del producto y de las columnas disponibles; no se interpretan como equivalentes entre MODIS y VIIRS sin calibración.", "IgnisNota"))
     seccion("7. Conclusiones")
     story.append(p(conclusion_fase3))
     seccion("8. Limitaciones y alcance")
