@@ -158,6 +158,31 @@ def _resumen_actividad(caso):
             f"VIIRS S-NPP {a['por_sensor']['viirs_snpp']}.")
 
 
+DATOS_VALIDACION = Path(__file__).resolve().parent / "biblioteca_ignis" / "validacion_seis_casos.csv"
+DATOS_SENSIBILIDAD = Path(__file__).resolve().parent / "biblioteca_ignis" / "sensibilidad_seis_casos.csv"
+
+
+def _datos_verificados(caso):
+    """Resultados históricos externos al JSON; si no están, nunca se simula una validación."""
+    if not DATOS_VALIDACION.exists() or not DATOS_SENSIBILIDAD.exists():
+        return None, None
+    try:
+        v = pd.read_csv(DATOS_VALIDACION)
+        a = v.loc[v["caso"] == caso["nombre"]]
+        if a.empty:
+            return None, None
+        fila = a.iloc[0]
+        if not (str(fila["coincide_pares"]).lower() == "true" and str(fila["coincide_total"]).lower() == "true"):
+            return None, None
+        t = pd.read_csv(DATOS_SENSIBILIDAD)
+        t = t.loc[t["caso"] == caso["nombre"]].sort_values(["distancia_km", "tiempo_min"])
+        if len(t) != 9 or int(fila["pares_recalculados"]) != int(caso["pares_1km_60min"]):
+            return None, None
+        return fila, t
+    except (OSError, KeyError, ValueError, TypeError):
+        return None, None
+
+
 def _pdf_historico(casos):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.6*cm, rightMargin=1.6*cm,
@@ -208,6 +233,18 @@ def _pdf_historico(casos):
         ("VALIGN",(0,0),(-1,-1),"TOP"),("FONTSIZE",(0,0),(-1,-1),8),
         ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#edf3f8")])]))
     story += [ti, Paragraph("Máximos y rachas calculados sobre días UTC con registros; no equivalen a intensidad, área quemada o incendios confirmados.",styles["IgnisBody"])]
+    story += [Paragraph("Verificación de correspondencias y sensibilidad",styles["IgnisHead"])]
+    resumen = [["Caso", "Pares 1 km/60 min", "Verificación"]]
+    for c in casos:
+        v, sensibilidad = _datos_verificados(c)
+        resumen.append([Paragraph(_texto(c["nombre"]), styles["IgnisBody"]),
+                        str(c["pares_1km_60min"]), "Coincide" if v is not None else "No verificada"])
+    tv = Table(resumen, colWidths=[8.1*cm, 4.1*cm, 4.0*cm], repeatRows=1)
+    tv.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#183852")),
+       ("TEXTCOLOR",(0,0),(-1,0),colors.white),("GRID",(0,0),(-1,-1),.3,colors.lightgrey),
+       ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#edf3f8")]),
+       ("VALIGN",(0,0),(-1,-1),"TOP"),("FONTSIZE",(0,0),(-1,-1),8)]))
+    story += [tv,Paragraph("Verificación computacional frente a los CSV originales NASA FIRMS. No constituye validación independiente de incendios ni de umbrales óptimos.",styles["IgnisBody"])]
     for i,c in enumerate(casos,1):
         story += [PageBreak(),Paragraph(f"Caso {i}: {_texto(c['nombre'])}",styles["IgnisHead"]),
           Paragraph(f"Departamento: {_texto(c['departamento'])}. Período de detecciones (UTC): {_texto(c['fecha_inicio_utc'])} a {_texto(c['fecha_fin_utc'])}.",styles["IgnisBody"]),
@@ -222,14 +259,31 @@ def _pdf_historico(casos):
             story.append(Paragraph("Cada celda indica registros satelitales en el día. Cero registros no demuestra ausencia de incendios; depende de la cobertura y de los archivos disponibles.",styles["IgnisBody"]))
         else:
             story.append(Paragraph("Calendario no disponible: este expediente es anterior a la incorporación de conteos diarios. Volvé a generar la ficha con la versión actualizada.",styles["IgnisBody"]))
+        verif, sens = _datos_verificados(c)
+        if verif is not None:
+            story += [Paragraph("Reproducción con archivos NASA FIRMS",styles["IgnisHead"]),
+                      Paragraph(f"Conteos originales y pares a 1 km / 60 min reproducidos: {int(verif['pares_recalculados'])} pares candidatos. Los recuentos del expediente coinciden con el reprocesamiento.",styles["IgnisBody"]),
+                      Paragraph("Sensibilidad a distancia y tiempo (pares candidatos)",styles["IgnisHead"])]
+            matriz = [["Distancia", "30 min", "60 min", "180 min"]]
+            for dist in (0.5, 1.0, 2.0):
+                fila = sens.loc[sens["distancia_km"] == dist]
+                matriz.append([f"{dist:g} km"] + [str(int(fila.loc[fila["tiempo_min"] == minuto, "pares_candidatos"].iloc[0])) for minuto in (30,60,180)])
+            tabla_sens = Table(matriz,colWidths=[4.0*cm]*4)
+            tabla_sens.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#183852")),
+              ("TEXTCOLOR",(0,0),(-1,0),colors.white),("GRID",(0,0),(-1,-1),.3,colors.lightgrey),
+              ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#edf3f8")]),
+              ("FONTSIZE",(0,0),(-1,-1),9)]))
+            story += [tabla_sens, Spacer(1,.25*cm), Paragraph("Nueve escenarios reproducidos. Los pares pueden compartir detecciones y no equivalen a eventos únicos. El análisis no mide exactitud ni sensibilidad frente a incendios confirmados.",styles["IgnisBody"])]
+        else:
+            story.append(Paragraph("Sin reprocesamiento verificable asociado a este expediente; no se presentan escenarios de sensibilidad.",styles["IgnisBody"]))
         story += [Paragraph("Patrones históricos y períodos destacados",styles["IgnisHead"]),
                   Paragraph(_texto(_resumen_actividad(c)),styles["IgnisBody"]),
                   Paragraph("Armonización y validación",styles["IgnisHead"]),
                   Paragraph(f"Pares candidatos registrados con umbral de 1 km y 60 minutos: {_texto(c['pares_1km_60min'])}. "
                             "No representan eventos únicos: una observación puede participar en varios pares. "
                             "El expediente conserva recuentos diarios, pero no las posiciones y horas de cada detección; "
-                            "por eso no permite recalcular aquí la sensibilidad a otros umbrales ni validar los emparejamientos. "
-                            "La validación independiente y la normalización por cobertura siguen pendientes.",styles["IgnisBody"]),
+                            "Los escenarios históricos, cuando figuran arriba, se reprodujeron externamente a partir de los CSV originales. "
+                            "La validación independiente de incendios y la normalización por cobertura siguen pendientes.",styles["IgnisBody"]),
                   Paragraph("Interpretación",styles["IgnisHead"]),Paragraph(_texto(c["conclusion"]),styles["IgnisBody"])]
     story += [PageBreak(),Paragraph("Conclusiones generales y limitaciones",styles["IgnisHead"]),
       Paragraph("Los recuentos describen únicamente los archivos, períodos y recortes definidos para cada estudio. No deben interpretarse como número de incendios ni compararse como tasas de ocurrencia sin normalizar cobertura satelital, extensión territorial y tiempo de observación.",styles["IgnisBody"]),
@@ -348,7 +402,20 @@ def mostrar_biblioteca(contexto):
     st.caption("Máximos y rachas descriptivos sobre días UTC con registros, no incendios confirmados ni medidas de intensidad.")
     st.subheader("Estado de armonización y validación")
     st.write(f"Pares candidatos a 1 km y 60 min: {c['pares_1km_60min']}. No equivalen a eventos únicos.")
-    st.info("La biblioteca no conserva las coordenadas y horas de cada registro. Para validar correspondencias y sensibilidad de umbrales históricos hay que reprocesar los CSV originales; no se inventan esos resultados.")
+    v, sens = _datos_verificados(c)
+    if v is not None:
+        st.success("Conteos y correspondencias a 1 km / 60 min reproducidos desde los archivos NASA FIRMS originales.")
+        st.subheader("Sensibilidad histórica verificada: nueve escenarios")
+        st.dataframe(sens[["distancia_km", "tiempo_min", "pares_candidatos", "modis_con", "viirs_con"]],use_container_width=True,hide_index=True)
+        st.caption("Verificación computacional, no validación independiente de incendios ni de umbrales óptimos.")
+    else:
+        st.info("No se dispone de archivos de verificación para este expediente. Los conteos de la biblioteca no permiten recalcular correspondencias por sí solos.")
+    try:
+        st.download_button("📄 Descargar informe del expediente seleccionado (PDF)",
+                           _pdf_historico([c]),file_name="IGNIS_expediente_individual.pdf",
+                           mime="application/pdf",key="ignis_f6_pdf_seleccionado")
+    except Exception as error:
+        st.error(f"No se pudo generar el PDF individual: {error}")
     if c.get("diario_utc"):
         st.subheader("Calendario diario del expediente (UTC)")
         st.dataframe(pd.DataFrame(c["diario_utc"]), use_container_width=True, hide_index=True)
