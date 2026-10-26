@@ -111,6 +111,53 @@ def _meses_del_caso(caso):
         return []
 
 
+MESES_ES = ("", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+
+
+def analizar_actividad_diaria(caso):
+    """Indicadores descriptivos derivados exclusivamente de diario_utc; sin inferir incendios."""
+    registros = sorted(caso.get("diario_utc", []), key=lambda r: r["fecha"])
+    if not registros:
+        return None
+    diario = {}
+    for d in registros:
+        dia = date.fromisoformat(str(d["fecha"]))
+        diario[dia] = sum(int(d.get(k, 0)) for k in ("modis", "viirs_noaa20", "viirs_snpp"))
+    if not diario or sum(diario.values()) == 0:
+        return None
+    maximo = max(diario.values())
+    picos = [d.isoformat() for d, n in diario.items() if n == maximo]
+    activos = sorted(d for d, n in diario.items() if n > 0)
+    rachas = []
+    inicio = fin = activos[0]
+    for dia in activos[1:]:
+        if (dia - fin).days == 1:
+            fin = dia
+        else:
+            rachas.append((inicio, fin, (fin - inicio).days + 1))
+            inicio = fin = dia
+    rachas.append((inicio, fin, (fin - inicio).days + 1))
+    mayor = max(r[2] for r in rachas)
+    return {"picos": picos, "maximo": maximo, "dias_activos": len(activos),
+            "racha_maxima": mayor,
+            "rachas_maximas": [(a.isoformat(), b.isoformat()) for a,b,n in rachas if n == mayor],
+            "por_sensor": {k: int(caso.get(k, 0)) for k in ("modis", "viirs_noaa20", "viirs_snpp")}}
+
+
+def _resumen_actividad(caso):
+    a = analizar_actividad_diaria(caso)
+    if not a:
+        return "Sin datos diarios suficientes para determinar máximos y rachas."
+    picos = ", ".join(a["picos"])
+    rachas = ", ".join(f"{i} a {f}" if i != f else i for i,f in a["rachas_maximas"])
+    return (f"Máximo diario: {a['maximo']} registros ({picos}, UTC). "
+            f"Días con detecciones: {a['dias_activos']}. "
+            f"Mayor racha de días consecutivos con registros: {a['racha_maxima']} "
+            f"({rachas}). Distribución del período: MODIS {a['por_sensor']['modis']}, "
+            f"VIIRS NOAA-20 {a['por_sensor']['viirs_noaa20']}, "
+            f"VIIRS S-NPP {a['por_sensor']['viirs_snpp']}.")
+
+
 def _pdf_historico(casos):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=1.6*cm, rightMargin=1.6*cm,
@@ -148,6 +195,19 @@ def _pdf_historico(casos):
         ("GRID",(0,0),(-1,-1),.3,colors.lightgrey),("FONTSIZE",(0,0),(-1,-1),8),
         ("BOTTOMPADDING",(0,0),(-1,-1),7)]))
     story += [t,Spacer(1,.2*cm),Paragraph("* Pares candidatos, no incendios independientes. Los conteos no están normalizados por cobertura ni frecuencia de observación.",styles["IgnisBody"])]
+    story += [Paragraph("Indicadores históricos comparables (descriptivos)",styles["IgnisHead"])]
+    datos_ind = [["Caso", "Pico UTC", "Máx./día", "Días activos", "Racha"]]
+    for c in casos:
+        a = analizar_actividad_diaria(c)
+        datos_ind.append([Paragraph(_texto(c["nombre"]),styles["IgnisBody"]),
+                          ", ".join(a["picos"]) if a else "N/D", str(a["maximo"]) if a else "N/D",
+                          str(a["dias_activos"]) if a else "N/D", str(a["racha_maxima"]) if a else "N/D"])
+    ti = Table(datos_ind, colWidths=[6.0*cm,3.4*cm,2.0*cm,2.4*cm,2.0*cm],repeatRows=1)
+    ti.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#183852")),
+        ("TEXTCOLOR",(0,0),(-1,0),colors.white),("GRID",(0,0),(-1,-1),.3,colors.lightgrey),
+        ("VALIGN",(0,0),(-1,-1),"TOP"),("FONTSIZE",(0,0),(-1,-1),8),
+        ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#edf3f8")])]))
+    story += [ti, Paragraph("Máximos y rachas calculados sobre días UTC con registros; no equivalen a intensidad, área quemada o incendios confirmados.",styles["IgnisBody"])]
     for i,c in enumerate(casos,1):
         story += [PageBreak(),Paragraph(f"Caso {i}: {_texto(c['nombre'])}",styles["IgnisHead"]),
           Paragraph(f"Departamento: {_texto(c['departamento'])}. Período de detecciones (UTC): {_texto(c['fecha_inicio_utc'])} a {_texto(c['fecha_fin_utc'])}.",styles["IgnisBody"]),
@@ -157,12 +217,20 @@ def _pdf_historico(casos):
         meses = _meses_del_caso(c)
         if meses:
             for anio,mes in meses:
-                story += [Paragraph(f"{calendar.month_name[mes]} {anio}",styles["IgnisBody"]),
+                story += [Paragraph(f"{MESES_ES[mes]} {anio}",styles["IgnisBody"]),
                           _tabla_calendario(c,anio,mes,styles),Spacer(1,.35*cm)]
             story.append(Paragraph("Cada celda indica registros satelitales en el día. Cero registros no demuestra ausencia de incendios; depende de la cobertura y de los archivos disponibles.",styles["IgnisBody"]))
         else:
             story.append(Paragraph("Calendario no disponible: este expediente es anterior a la incorporación de conteos diarios. Volvé a generar la ficha con la versión actualizada.",styles["IgnisBody"]))
-        story += [Paragraph("Interpretación",styles["IgnisHead"]),Paragraph(_texto(c["conclusion"]),styles["IgnisBody"])]
+        story += [Paragraph("Patrones históricos y períodos destacados",styles["IgnisHead"]),
+                  Paragraph(_texto(_resumen_actividad(c)),styles["IgnisBody"]),
+                  Paragraph("Armonización y validación",styles["IgnisHead"]),
+                  Paragraph(f"Pares candidatos registrados con umbral de 1 km y 60 minutos: {_texto(c['pares_1km_60min'])}. "
+                            "No representan eventos únicos: una observación puede participar en varios pares. "
+                            "El expediente conserva recuentos diarios, pero no las posiciones y horas de cada detección; "
+                            "por eso no permite recalcular aquí la sensibilidad a otros umbrales ni validar los emparejamientos. "
+                            "La validación independiente y la normalización por cobertura siguen pendientes.",styles["IgnisBody"]),
+                  Paragraph("Interpretación",styles["IgnisHead"]),Paragraph(_texto(c["conclusion"]),styles["IgnisBody"])]
     story += [PageBreak(),Paragraph("Conclusiones generales y limitaciones",styles["IgnisHead"]),
       Paragraph("Los recuentos describen únicamente los archivos, períodos y recortes definidos para cada estudio. No deben interpretarse como número de incendios ni compararse como tasas de ocurrencia sin normalizar cobertura satelital, extensión territorial y tiempo de observación.",styles["IgnisBody"]),
       Paragraph("Los recortes son rectangulares y no representan necesariamente límites administrativos. Las asociaciones entre sensores no implican detecciones independientes. La confirmación de incendios requiere evidencia externa de campo o fuentes oficiales.",styles["IgnisBody"]),
@@ -222,7 +290,7 @@ def mostrar_biblioteca(contexto):
             meses = _meses_del_caso(ficha)
             indice = {d["fecha"]: d for d in diario_utc}
             for anio, mes in meses:
-                st.markdown(f"**{calendar.month_name[mes]} {anio}**")
+                st.markdown(f"**{MESES_ES[mes]} {anio}**")
                 filas = []
                 for dia in range(1, calendar.monthrange(anio, mes)[1] + 1):
                     fecha_dia = f"{anio:04d}-{mes:02d}-{dia:02d}"
@@ -261,9 +329,26 @@ def mostrar_biblioteca(contexto):
         return
     st.metric("Estudios disponibles", f"{len(casos)} / 6")
     st.dataframe(pd.DataFrame([{"Caso":c["nombre"], "Departamento":c["departamento"], "MODIS":c["modis"], "VIIRS NOAA-20":c["viirs_noaa20"], "VIIRS S-NPP":c["viirs_snpp"], "Total":c["total"]} for c in casos]), use_container_width=True, hide_index=True)
+    st.subheader("Comparación de indicadores históricos")
+    comparativa = []
+    for caso in casos:
+        a = analizar_actividad_diaria(caso)
+        comparativa.append({"Caso": caso["nombre"], "Máximo diario": a["maximo"] if a else None,
+                            "Fecha(s) del máximo UTC": ", ".join(a["picos"]) if a else "N/D",
+                            "Días con registros": a["dias_activos"] if a else None,
+                            "Racha máxima (días)": a["racha_maxima"] if a else None,
+                            "Pares candidatos": caso["pares_1km_60min"]})
+    st.dataframe(pd.DataFrame(comparativa), use_container_width=True, hide_index=True)
+    st.caption("Comparación descriptiva, no normalizada por área, cobertura ni frecuencia de observación.")
     elegido = st.selectbox("Consultar expediente", options=range(len(casos)), format_func=lambda i: casos[i]["nombre"], key="ignis_f6_selector")
     c = casos[elegido]
     st.write(c["conclusion"])
+    st.subheader("Patrones históricos y períodos destacados")
+    st.write(_resumen_actividad(c))
+    st.caption("Máximos y rachas descriptivos sobre días UTC con registros, no incendios confirmados ni medidas de intensidad.")
+    st.subheader("Estado de armonización y validación")
+    st.write(f"Pares candidatos a 1 km y 60 min: {c['pares_1km_60min']}. No equivalen a eventos únicos.")
+    st.info("La biblioteca no conserva las coordenadas y horas de cada registro. Para validar correspondencias y sensibilidad de umbrales históricos hay que reprocesar los CSV originales; no se inventan esos resultados.")
     if c.get("diario_utc"):
         st.subheader("Calendario diario del expediente (UTC)")
         st.dataframe(pd.DataFrame(c["diario_utc"]), use_container_width=True, hide_index=True)
