@@ -1,0 +1,134 @@
+[
+  {
+    "caso_id": "cerro-del-toro-maldonado-2023-01",
+    "estado": "Coincidencia documental sólida del evento",
+    "dias_con_evidencia_utc": ["2023-01-25", "2023-01-26"],
+    "dias_pendientes_utc": [],
+    "alcance": "Reportes históricos del incendio de Cerro del Toro y referencia institucional al uso de datos satelitales, sin georreferenciar cada detección del ZIP.",
+    "fuentes": [
+      {
+        "entidad": "Presidencia de la República / SINAE",
+        "tipo": "Institucional",
+        "titulo": "Memoria Anual 2023, Sistema Nacional de Emergencias, p. 148 (página 150 del PDF)",
+        "fecha_publicacion": "2024",
+        "fecha_evento": "2023-01-25",
+        "url": "https://medios.presidencia.gub.uy/legal/2024/proyectos/03/tomo_1_memoria_2023.pdf#page=150",
+        "resumen": "El SINAE documenta el incendio del Cerro del Toro de 25/01/2023 como experiencia piloto de cartografía basada en datos satelitales, utilizada por Bomberos y en una investigación fiscal.",
+        "limite": "No demuestra que IGNIS haya reproducido exactamente los productos o los puntos utilizados por SINAE."
+      },
+      {
+        "entidad": "Subrayado",
+        "tipo": "Noticia",
+        "titulo": "Bomberos intenta controlar incendio en Cerro del Toro de Piriápolis",
+        "fecha_publicacion": "2023-01-25",
+        "fecha_evento": "2023-01-25",
+        "url": "https://www.subrayado.com.uy/bomberos-intenta-controlar-incendio-cerro-del-toro-piriapolis-n889582",
+        "resumen": "Reporta incendio desde la madrugada del 25 de enero de 2023 en Cerro del Toro, Piriápolis.",
+        "limite": "La noticia no publica la latitud y longitud individual de los focos MODIS/VIIRS."
+      },
+      {
+        "entidad": "Subrayado",
+        "tipo": "Noticia",
+        "titulo": "Cerro del Toro: el incendio baja por la ladera sur a un área inaccesible",
+        "fecha_publicacion": "2023-01-26",
+        "fecha_evento": "2023-01-26",
+        "url": "https://www.subrayado.com.uy/cerro-del-toro-el-incendio-baja-la-ladera-sur-un-area-inaccesible-n889682/amp",
+        "resumen": "Continúan actividad y operaciones el 26 de enero, cuando el incendio estaba contenido pero no extinguido por completo.",
+        "limite": "No permite contar ni validar detecciones satelitales una por una."
+      }
+    ]
+  },
+  {
+    "caso_id": "durazno-2023-01-15",
+    "estado": "Coincidencia documental de zona y período",
+    "dias_con_evidencia_utc": ["2023-01-15"],
+    "dias_pendientes_utc": [],
+    "alcance": "Noticia local del 15/01 sobre incendio iniciado el día 14 en Santa Bernardina, situada dentro del área analizada; falta perímetro del incendio.",
+    "fuentes": [
+      {
+        "entidad": "Durazno Digital",
+        "tipo": "Noticia local",
+        "titulo": "Bomberos de Durazno trabajaban en procura de controlar un importante incendio",
+        "fecha_publicacion": "2023-01-15",
+        "fecha_evento": "2023-01-14/2023-01-15",
+        "url": "https://www.duraznodigital.uy/2023/01/desde-las-1730-bomberos-de-durazno.html",
+        "resumen": "Incendio en Santa Bernardina, zona del Megatambo, iniciado 14/01 y cubierto en noticia del 15/01.",
+        "limite": "No contiene perímetro cartográfico verificable; coincidencia aproximada a escala de barrio o localidad."
+      },
+      {
+        "entidad": "Subrayado / declaración de Bomberos",
+        "tipo": "Noticia con fuente oficial citada",
+        "titulo": "Bomberos lleva más de 1.000 intervenciones por incendios en lo que va del verano",
+        "fecha_publicacion": "2023-01-16",
+        "fecha_evento": "2023-01-15",
+        "url": "https://www.subrayado.com.uy/bomberos-lleva-mas-1000-intervenciones-incendios-lo-que-va-del-verano-dijo-su-director-n888826",
+        "resumen": "Reporta 70 hectáreas afectadas en Durazno según declaraciones del director de Bomberos.",
+        "limite": "La referencia periodística no delimita inequívocamente la zona de cada píxel."
+      }
+    ]
+  },
+  {
+    "caso_id": "artigas-2023-01-17",
+    "estado": "Sin corroboración externa específica localizada",
+    "dias_con_evidencia_utc": [],
+    "dias_pendientes_utc": ["2023-01-17", "2023-02-01"],
+    "alcance": "No se ha localizado noticia o reporte histórico de 2023 suficientemente específico por fecha y área. No asociar noticias sobre incendios de Artigas de 2025.",
+    "fuentes": []
+  },
+  {
+    "caso_id": "canelones-atlantida-2023-01",
+    "estado": "Coincidencia documental de zona y período",
+    "dias_con_evidencia_utc": ["2023-01-08"],
+    "dias_pendientes_utc": ["2023-01-25"],
+    "alcance": "Incendio de Salinas, dentro del recorte publicado para el caso rotulado como zona de Atlántida; falta comprobar la ubicación exacta de cada detección.",
+    "fuentes": [
+      {
+        "entidad": "Subrayado / Dirección Nacional de Bomberos",
+        "tipo": "Noticia con reporte oficial",
+        "titulo": "Bomberos trabaja en tres incendios forestales en el Área Metropolitana",
+        "fecha_publicacion": "2023-01-08",
+        "fecha_evento": "2023-01-07/2023-01-08",
+        "url": "https://www.subrayado.com.uy/bomberos-trabaja-tres-incendios-fotestales-el-area-metropolitana-n888312",
+        "resumen": "Describió un incendio forestal en Salinas, Achiras y Solís, con tareas de Bomberos el 8/01 y corte de ruta 87.",
+        "limite": "Se desconoce si todos los puntos del 08/01 del ZIP caen en el perímetro incendiado."
+      },
+      {
+        "entidad": "Noticias de Bomberos",
+        "tipo": "Prensa especializada",
+        "titulo": "Vecinos increpan a bomberos y reclaman más personal ante incendio",
+        "fecha_publicacion": "2023-01-09",
+        "fecha_evento": "2023-01-07/2023-01-08",
+        "url": "https://www.noticiasdebomberos.com/vecinos-increpan-a-bomberos-y-reclaman-mas-personal-ante-incendio-en-canelones",
+        "resumen": "Describe el mismo evento de Salinas iniciado el 7 de enero y reavivado el 8.",
+        "limite": "No hay georreferenciación precisa del polígono quemado."
+      }
+    ]
+  },
+  {
+    "caso_id": "lavalleja-2023-02-09",
+    "estado": "Sin corroboración externa específica localizada",
+    "dias_con_evidencia_utc": [],
+    "dias_pendientes_utc": ["2023-02-09", "2023-02-10"],
+    "alcance": "No se ha localizado referencia que coincida suficientemente con el recorte y los días. No utilizar incendios de Lavalleja publicados en 2025/2026.",
+    "fuentes": []
+  },
+  {
+    "caso_id": "treinta-y-tres-2023-01-15",
+    "estado": "Coincidencia documental de zona y período",
+    "dias_con_evidencia_utc": ["2023-01-15", "2023-01-16"],
+    "dias_pendientes_utc": ["2023-01-14", "2023-01-17", "2023-02-12"],
+    "alcance": "Reporte de incendio en bañado de Vergara, dentro del área analizada, compatible con detecciones del 15 y 16; otros días requieren verificación aparte.",
+    "fuentes": [
+      {
+        "entidad": "Subrayado / Dirección Nacional de Bomberos",
+        "tipo": "Noticia con declaraciones oficiales",
+        "titulo": "Bomberos lleva más de 1.000 intervenciones por incendios en lo que va del verano",
+        "fecha_publicacion": "2023-01-16",
+        "fecha_evento": "2023-01-15/2023-01-16",
+        "url": "https://www.subrayado.com.uy/bomberos-lleva-mas-1000-intervenciones-incendios-lo-que-va-del-verano-dijo-su-director-n888826",
+        "resumen": "El director de Bomberos indicó que el incendio en un bañado de Vergara seguía activo el 16/01 y había afectado al menos 120 hectáreas.",
+        "limite": "No publica un polígono georreferenciado de las 120 hectáreas ni permite atribuir toda la serie temporal al mismo evento."
+      }
+    ]
+  }
+]
