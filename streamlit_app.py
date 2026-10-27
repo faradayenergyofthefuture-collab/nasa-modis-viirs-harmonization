@@ -40,6 +40,8 @@ if not archivos:
     st.info("Podés consultar la biblioteca histórica sin cargar archivos NASA FIRMS.")
     from ignis_biblioteca import mostrar_biblioteca
     mostrar_biblioteca(None)
+    from ignis_evidencias import mostrar evidencias
+    mostrar_evidencias()
     st.stop()
 
 def leer_archivo(archivo):
@@ -1660,3 +1662,5 @@ mostrar_biblioteca({
     "lon_max": lon_max,
     "conclusion_fase3": conclusion_fase3,
 })
+from ignis_evidencias import mostrar_evidencias
+mostrar_evidencias(datos)
