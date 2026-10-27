@@ -1,0 +1,289 @@
+{
+  "proyecto": "IGNIS",
+  "titulo": "Corroboración externa de casos FIRMS Uruguay (verano 2023)",
+  "revisado": "2026-10-27",
+  "alcance": "Fuentes verificadas en la web; la coincidencia de fecha y región NO valida por sí sola cada detección o incendio individual.",
+  "metodologia": "Los recortes y conteos se toman de la Guía cartográfica IGNIS-IGM 2023 aportada por el equipo; las noticias son fuentes externas del episodio, no de los píxeles. Las fechas FIRMS se tratan en UTC, la prensa en America/Montevideo.",
+  "referencia_cartografica": {
+    "archivo": "docs/IGNIS_Guia_cartografica_IGM_2023_6_casos_completa.pdf",
+    "descripcion": "Guía elaborada por el equipo con capturas del visualizador IGM; no es certificación emitida por IGM."
+  },
+  "fuente_nasa": "https://firms2.modaps.eosdis.nasa.gov/alerts/notes.php",
+  "casos": [
+    {
+      "id": "durazno-2023-01-15",
+      "nombre": "Durazno",
+      "departamento": "Durazno",
+      "bbox": [
+        -33.46,
+        -33.28,
+        -56.75,
+        -56.44
+      ],
+      "centro": [
+        -33.37,
+        -56.595
+      ],
+      "fechas_utc": [
+        "2023-01-15"
+      ],
+      "igm_pagina": 3,
+      "esperados": {
+        "MODIS": 11,
+        "VIIRS S-NPP": 10,
+        "VIIRS NOAA-20": 7
+      },
+      "resumen": "Incendio en Santa Bernardina, cerca del Megatambo, iniciado el 14/01; los reportes del 15/01 se superponen temporalmente con el recorte FIRMS.",
+      "etiqueta": "Coincidencia regional y temporal; perímetro por verificar",
+      "fuentes": [
+        {
+          "tipo": "Prensa local",
+          "medio": "Durazno Digital",
+          "titulo": "Bomberos de Durazno trabajaban en procura de controlar un importante incendio",
+          "fecha_publicacion": "2023-01-15",
+          "hecho_fecha_desde_local": "2023-01-14",
+          "hecho_fecha_hasta_local": "2023-01-15",
+          "lugar": "Santa Bernardina, zona Megatambo",
+          "url": "https://www.duraznodigital.uy/2023/01/desde-las-1730-bomberos-de-durazno.html",
+          "alcance": "Incendio localizado por nombre de zona; faltan coordenadas del perímetro",
+          "notas": "Iniciado el 14/01 aproximadamente a las 17:30 hora local; no se dispone de polígono oficial verificado del incendio."
+        },
+        {
+          "tipo": "Declaraciones de Bomberos en prensa",
+          "medio": "Subrayado",
+          "titulo": "Bomberos lleva más de 1.000 intervenciones por incendios en lo que va del verano",
+          "fecha_publicacion": "2023-01-16",
+          "hecho_fecha_desde_local": "2023-01-15",
+          "hecho_fecha_hasta_local": "2023-01-16",
+          "lugar": "Durazno (departamento)",
+          "url": "https://www.subrayado.com.uy/bomberos-lleva-mas-1000-intervenciones-incendios-lo-que-va-del-verano-dijo-su-director-n888826",
+          "alcance": "Confirmación departamental solamente",
+          "notas": "Menciona unas 70 hectáreas afectadas en Durazno; no identifica el recorte o coordenadas."
+        }
+      ]
+    },
+    {
+      "id": "cerro-del-toro-maldonado-2023-01",
+      "nombre": "Cerro del Toro (Maldonado)",
+      "departamento": "Maldonado",
+      "bbox": [
+        -34.88,
+        -34.84,
+        -55.28,
+        -55.23
+      ],
+      "centro": [
+        -34.86,
+        -55.255
+      ],
+      "fechas_utc": [
+        "2023-01-25",
+        "2023-01-26"
+      ],
+      "igm_pagina": 4,
+      "esperados": {
+        "MODIS": 7,
+        "VIIRS S-NPP": 21,
+        "VIIRS NOAA-20": 18
+      },
+      "resumen": "Incendio reportado en Cerro del Toro los días 25 y 26/01. La primera marca de la biblioteca es 25/01 04:29 UTC (01:29 local); noticia informa inicio cerca de 01:30. La hora publicada es aproximada, no una medición instrumental.",
+      "etiqueta": "Coincidencia regional/temporal fuerte; sin validación por píxel",
+      "fuentes": [
+        {
+          "tipo": "Informe oficial",
+          "medio": "Presidencia / SINAE, Memoria Anual 2023",
+          "titulo": "Uso de insumos satelitales para investigar Cerro del Toro (página impresa 148; página PDF 150)",
+          "fecha_publicacion": "2024",
+          "hecho_fecha_desde_local": "2023-01-25",
+          "hecho_fecha_hasta_local": "2023-01-26",
+          "lugar": "Cerro del Toro, Piriápolis",
+          "url": "https://medios.presidencia.gub.uy/legal/2024/proyectos/03/tomo_1_memoria_2023.pdf#page=150",
+          "alcance": "Corroboración institucional del evento y uso de datos satelitales; no certificación de las detecciones de IGNIS",
+          "notas": "SINAE indica que el caso fue experiencia piloto cartográfica y los insumos apoyaron una investigación de Bomberos y Fiscalía."
+        },
+        {
+          "tipo": "Prensa (Bomberos)",
+          "medio": "Subrayado",
+          "titulo": "Bomberos intenta controlar incendio en Cerro del Toro de Piriápolis",
+          "fecha_publicacion": "2023-01-25",
+          "hecho_fecha_desde_local": "2023-01-25",
+          "hecho_fecha_hasta_local": "2023-01-25",
+          "lugar": "Cerro del Toro, Piriápolis",
+          "url": "https://www.subrayado.com.uy/bomberos-intenta-controlar-incendio-cerro-del-toro-piriapolis-n889582",
+          "alcance": "Lugar explícito y horario de inicio aproximado",
+          "notas": "Informó inicio aproximadamente a las 01:30, sujeto a incertidumbre periodística."
+        },
+        {
+          "tipo": "Prensa (Bomberos)",
+          "medio": "Subrayado",
+          "titulo": "Cerro del Toro: el incendio baja por la ladera sur a un área inaccesible",
+          "fecha_publicacion": "2023-01-26",
+          "hecho_fecha_desde_local": "2023-01-26",
+          "hecho_fecha_hasta_local": "2023-01-26",
+          "lugar": "Cerro del Toro, Piriápolis",
+          "url": "https://www.subrayado.com.uy/cerro-del-toro-el-incendio-baja-la-ladera-sur-un-area-inaccesible-n889682/amp",
+          "alcance": "Continua actividad del incendio el 26/01",
+          "notas": "Incendio controlado pero con llamas que descendían por la ladera sur."
+        }
+      ]
+    },
+    {
+      "id": "treinta-y-tres-2023-01-15",
+      "nombre": "Treinta y Tres (zona Vergara)",
+      "departamento": "Treinta y Tres",
+      "bbox": [
+        -32.985,
+        -32.879,
+        -54.069,
+        -53.92
+      ],
+      "centro": [
+        -32.932,
+        -53.9945
+      ],
+      "fechas_utc": [
+        "2023-01-15"
+      ],
+      "igm_pagina": 5,
+      "esperados": {
+        "MODIS": 2,
+        "VIIRS S-NPP": 38,
+        "VIIRS NOAA-20": 21
+      },
+      "resumen": "El 15/01 se registraron focos FIRMS próximos a la localidad de Vergara; reportes del 16/01 señalan un incendio en bañado de Vergara. Falta ubicar el lugar preciso del fuego respecto a los píxeles.",
+      "etiqueta": "Coincidencia regional y temporal; perímetro por verificar",
+      "fuentes": [
+        {
+          "tipo": "Declaraciones de Bomberos en prensa",
+          "medio": "Subrayado",
+          "titulo": "Bomberos lleva más de 1.000 intervenciones por incendios en lo que va del verano",
+          "fecha_publicacion": "2023-01-16",
+          "hecho_fecha_desde_local": "2023-01-14",
+          "hecho_fecha_hasta_local": "2023-01-16",
+          "lugar": "Bañado de Vergara, Treinta y Tres",
+          "url": "https://www.subrayado.com.uy/bomberos-lleva-mas-1000-intervenciones-incendios-lo-que-va-del-verano-dijo-su-director-n888826",
+          "alcance": "Localidad y ventana compatibles; no perímetro",
+          "notas": "Menciona al menos 120 hectáreas en bañado de Vergara."
+        },
+        {
+          "tipo": "Prensa con reporte de Bomberos",
+          "medio": "Caras y Caretas",
+          "titulo": "Bomberos intervino un total de 59 incendios en todo el país",
+          "fecha_publicacion": "2023-01-16",
+          "hecho_fecha_desde_local": "2023-01-14",
+          "hecho_fecha_hasta_local": "2023-01-15",
+          "lugar": "Camino vecinal próximo a humedales y pajonales, Vergara",
+          "url": "https://www.carasycaretas.com.uy/bomberos-intervino-un-total-59-incendios-todo-el-pais-n58866",
+          "alcance": "Referencia regional específica; no coordenadas del foco",
+          "notas": "Se describen dos eventos en Vergara; no debe asumirse que ambos corresponden a un único foco FIRMS."
+        }
+      ]
+    },
+    {
+      "id": "canelones-atlantida-2023-01",
+      "nombre": "Canelones (zona de Atlántida/Salinas)",
+      "departamento": "Canelones",
+      "bbox": [
+        -34.788,
+        -34.724,
+        -55.89,
+        -55.81
+      ],
+      "centro": [
+        -34.756,
+        -55.85
+      ],
+      "fechas_utc": [
+        "2023-01-08"
+      ],
+      "igm_pagina": 6,
+      "esperados": {
+        "MODIS": 4,
+        "VIIRS S-NPP": 23,
+        "VIIRS NOAA-20": 26
+      },
+      "resumen": "Bomberos y prensa reportaron un incendio forestal en Salinas, ruta 87, durante el 08/01. Salinas se ubica dentro del recorte general; se necesita el perímetro de incendio para confirmar cada punto.",
+      "etiqueta": "Coincidencia regional y temporal; perímetro por verificar",
+      "fuentes": [
+        {
+          "tipo": "Prensa con reporte oficial",
+          "medio": "Subrayado",
+          "titulo": "Bomberos trabaja en tres incendios forestales en el Área Metropolitana",
+          "fecha_publicacion": "2023-01-08",
+          "hecho_fecha_desde_local": "2023-01-07",
+          "hecho_fecha_hasta_local": "2023-01-08",
+          "lugar": "Salinas, Achiras y Solís, ruta 87",
+          "url": "https://www.subrayado.com.uy/bomberos-trabaja-tres-incendios-fotestales-el-area-metropolitana-n888312",
+          "alcance": "Referencia a zona de Salinas; no georreferencia del área quemada",
+          "notas": "No confundir el incendio de campo con el incendio de vivienda ocurrido en Estación Atlántida el mismo día."
+        },
+        {
+          "tipo": "Prensa con reporte de Bomberos",
+          "medio": "Subrayado",
+          "titulo": "Incendio afectó más de 80 hectáreas en Salinas; continúan los trabajos",
+          "fecha_publicacion": "2023-01-08",
+          "hecho_fecha_desde_local": "2023-01-08",
+          "hecho_fecha_hasta_local": "2023-01-09",
+          "lugar": "Salinas, Canelones",
+          "url": "https://www.subrayado.com.uy/incendio-afecto-mas-80-hectareas-salinas-continuan-los-trabajos-n888328",
+          "alcance": "Confirmación regional; falta perímetro exacto",
+          "notas": "La cifra de hectáreas no debe derivarse del número de detecciones FIRMS."
+        }
+      ]
+    },
+    {
+      "id": "lavalleja-2023-02-09",
+      "nombre": "Lavalleja",
+      "departamento": "Lavalleja",
+      "bbox": [
+        -34.116,
+        -34.044,
+        -54.94,
+        -54.842
+      ],
+      "centro": [
+        -34.08,
+        -54.891
+      ],
+      "fechas_utc": [
+        "2023-02-09"
+      ],
+      "igm_pagina": 7,
+      "esperados": {
+        "MODIS": 11,
+        "VIIRS S-NPP": 16,
+        "VIIRS NOAA-20": 16
+      },
+      "resumen": "Se documentan coordenadas y detecciones satelitales del 09/02, pero no encontramos una crónica de incendio de 2023 que pueda vincularse rigurosamente con el rectángulo.",
+      "etiqueta": "Sin corroboración externa localizada",
+      "fuentes": []
+    },
+    {
+      "id": "artigas-2023-01-17",
+      "nombre": "Artigas",
+      "departamento": "Artigas",
+      "bbox": [
+        -30.505,
+        -30.443,
+        -56.576,
+        -56.499
+      ],
+      "centro": [
+        -30.474,
+        -56.5375
+      ],
+      "fechas_utc": [
+        "2023-01-17"
+      ],
+      "igm_pagina": 8,
+      "esperados": {
+        "MODIS": 3,
+        "VIIRS S-NPP": 21,
+        "VIIRS NOAA-20": 14
+      },
+      "resumen": "Se documentan detecciones satelitales del 17/01 cerca de la frontera con Brasil, pero no una fuente independiente con fecha y localidad suficientemente precisas. Revisar además qué detecciones cruzan la frontera.",
+      "etiqueta": "Sin corroboración externa localizada; revisar límite fronterizo",
+      "fuentes": []
+    }
+  ]
+}
