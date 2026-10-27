@@ -1189,19 +1189,19 @@ if base_cal.empty:
     st.warning("No hay detecciones con fecha valida en la region seleccionada.")
 else:
     base_cal["dia_utc"] = base_cal["fecha_hora_utc"].dt.date
-    base_cal["anio_cal"] = base_cal["fecha_hora_utc"].dt.year
+    base_cal["año_cal"] = base_cal["fecha_hora_utc"].dt.year
     base_cal["mes_cal"] = base_cal["fecha_hora_utc"].dt.month
 
-    anios_cal = sorted(base_cal["anio_cal"].unique().tolist())
-    c_anio, c_mes = st.columns(2)
-    with c_anio:
-        anio_elegido = st.selectbox(
-            "Anio", anios_cal, index=len(anios_cal) - 1,
-            key="fase4_anio"
+    años_cal = sorted(base_cal["año_cal"].unique().tolist())
+    c_año, c_mes = st.columns(2)
+    with c_año:
+        año_elegido = st.selectbox(
+            "Año", años_cal, index=len(años_cal) - 1,
+            key="fase4_año"
         )
     with c_mes:
         meses_presentes = sorted(
-            base_cal.loc[base_cal["anio_cal"] == anio_elegido, "mes_cal"]
+            base_cal.loc[base_cal["año_cal"] == año_elegido, "mes_cal"]
             .unique().tolist()
         )
         nombres_meses = [
@@ -1215,7 +1215,7 @@ else:
         )
 
     mes_cal = base_cal.loc[
-        (base_cal["anio_cal"] == anio_elegido)
+        (base_cal["año_cal"] == año_elegido)
         & (base_cal["mes_cal"] == mes_elegido)
     ].copy()
     conteo_diario = mes_cal.groupby("dia_utc").size()
@@ -1233,7 +1233,7 @@ else:
             return "#fb923c"
         return "#ef4444"
 
-    semanas_cal = calendar.monthcalendar(anio_elegido, mes_elegido)
+    semanas_cal = calendar.monthcalendar(año_elegido, mes_elegido)
     html_cal = (
         '<table style="width:100%;border-collapse:separate;'
         'border-spacing:4px;table-layout:fixed;text-align:center">'
@@ -1250,7 +1250,7 @@ else:
             if numero_dia == 0:
                 html_cal += '<td style="height:70px"></td>'
             else:
-                fecha_celda = date(anio_elegido, mes_elegido, numero_dia)
+                fecha_celda = date(año_elegido, mes_elegido, numero_dia)
                 cantidad = int(conteo_diario.get(fecha_celda, 0))
                 fondo = color_calendario(cantidad, max_diario)
                 tinta = "#ffffff" if cantidad and cantidad / max_diario > 0.75 else "#172033"
@@ -1305,10 +1305,10 @@ else:
         .unstack(fill_value=0)
     )
     # Completar los dias del mes con cero para una linea temporal continua.
-    primer_dia = date(anio_elegido, mes_elegido, 1)
+    primer_dia = date(año_elegido, mes_elegido, 1)
     ultimo_dia = date(
-        anio_elegido, mes_elegido,
-        calendar.monthrange(anio_elegido, mes_elegido)[1]
+        año_elegido, mes_elegido,
+        calendar.monthrange(año_elegido, mes_elegido)[1]
     )
     dias_mes = pd.date_range(primer_dia, ultimo_dia, freq="D")
     resumen_cal.index = pd.to_datetime(resumen_cal.index)
@@ -1321,7 +1321,7 @@ else:
     st.download_button(
         "Descargar calendario mensual CSV",
         data=exportar_cal.to_csv().encode("utf-8-sig"),
-        file_name=f"calendario_modis_viirs_{anio_elegido}_{mes_elegido:02d}.csv",
+        file_name=f"calendario_modis_viirs_{año_elegido}_{mes_elegido:02d}.csv",
         mime="text/csv",
         key="fase4_descarga"
     )
@@ -1516,9 +1516,9 @@ def construir_informe_pdf_ignis():
         story.append(p("No se pudo calcular sensibilidad: se requieren detecciones válidas de ambos sensores."))
 
     seccion("6. Calendario de actividad térmica")
-    if "mes_cal" in globals() and "anio_elegido" in globals() and "mes_elegido" in globals():
+    if "mes_cal" in globals() and "año_elegido" in globals() and "mes_elegido" in globals():
         story.append(p(
-            f"Mes seleccionado en la Fase 4: {mes_elegido:02d}/{anio_elegido}. "
+            f"Mes seleccionado en la Fase 4: {mes_elegido:02d}/{año_elegido}. "
             f"Detecciones registradas: {len(mes_cal)}. "
             f"Días con al menos una detección: {int((conteo_diario > 0).sum())}. "
             f"Máximo diario: {int(conteo_diario.max()) if not conteo_diario.empty else 0}."
