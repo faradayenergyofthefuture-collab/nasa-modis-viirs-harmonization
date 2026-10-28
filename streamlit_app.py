@@ -1376,6 +1376,10 @@ with tab_calendario:
             "sobrepasos satelitales ni duplicacion entre sensores."
         )
 
+        # Calendario espacial-temporal conjunto: no reemplaza el calendario de registros.
+        from ignis_calendario_armonizado import mostrar_calendario_armonizado
+        mostrar_calendario_armonizado(region_filtrada, clave='fase4')
+
 
 with tab_informe:
     # ============================================================
@@ -1698,3 +1702,16 @@ with tab_evidencias:
 with tab_armonizacion:
     from ignis_armonizacion_externa import mostrar_armonizacion_externa
     mostrar_armonizacion_externa(datos)
+    from ignis_calendario_armonizado import construir_calendario, crear_informe_final_pdf, mostrar_calendario_armonizado
+    st.divider()
+    st.header('Informe final IGNIS UY · objetivo NASA')
+    st.write('Documento de cierre: calendario conjunto, metodología, patrones disponibles, contraste histórico y matriz de verificación con limitaciones explícitas.')
+    st.caption('Se utiliza la región seleccionada en Fase 2 y la grilla de 1 km para mantener una configuración reproducible en el informe.')
+    try:
+        from ignis_armonizacion_externa import construir_correspondencias_historicas
+        resumen_historico, _ = construir_correspondencias_historicas()
+        diario_final, _ = construir_calendario(region_filtrada, 1.0)
+        informe_final = crear_informe_final_pdf(diario_final, resumen_historico, None, nombre_caso.strip() or 'Área seleccionada', 1.0)
+        st.download_button('Descargar informe final NASA - IGNIS UY (PDF)', informe_final, 'IGNIS_UY_informe_final_NASA.pdf', 'application/pdf', key='fase8_pdf_final')
+    except Exception as exc:
+        st.error(f'No fue posible generar el informe final: {exc}')
