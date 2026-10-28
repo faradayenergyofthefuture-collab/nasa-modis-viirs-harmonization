@@ -41,18 +41,22 @@ if not archivos:
     from ignis_biblioteca import mostrar_biblioteca
     from ignis_evidencias import mostrar_evidencias
 
-    tab_biblioteca, tab_evidencias = st.tabs([
+    tab_biblioteca, tab_evidencias, tab_armonizacion = st.tabs([
         "Biblioteca histórica",
         "Fase 7 · Evidencia externa y trazabilidad",
+        "Fase 8 · Armonización satélite–prensa",
     ])
     with tab_biblioteca:
         mostrar_biblioteca(None)
     with tab_evidencias:
         mostrar_evidencias()
+    with tab_armonizacion:
+        from ignis_armonizacion_externa import mostrar_armonizacion_externa
+        mostrar_armonizacion_externa()
     st.stop()
 
 (tab_exploracion, tab_analisis, tab_resultados, tab_calendario,
- tab_informe, tab_biblioteca, tab_evidencias) = st.tabs([
+ tab_informe, tab_biblioteca, tab_evidencias, tab_armonizacion) = st.tabs([
     "Fase 1 · Exploración",
     "Fase 2 · Análisis MODIS–VIIRS",
     "Fase 3 · Resultados",
@@ -60,6 +64,7 @@ if not archivos:
     "Fase 5 · Informe PDF",
     "Fase 6 · Biblioteca",
     "Fase 7 · Evidencia externa",
+    "Fase 8 · Armonización satélite–prensa",
 ])
 
 def leer_archivo(archivo):
@@ -1371,6 +1376,10 @@ with tab_calendario:
             "sobrepasos satelitales ni duplicacion entre sensores."
         )
 
+        # Calendario espacial-temporal conjunto: no reemplaza el calendario de registros.
+        from ignis_calendario_armonizado import mostrar_calendario_armonizado
+        mostrar_calendario_armonizado(region_filtrada, clave='fase4')
+
 
 with tab_informe:
     # ============================================================
@@ -1689,3 +1698,20 @@ with tab_biblioteca:
 with tab_evidencias:
     from ignis_evidencias import mostrar_evidencias
     mostrar_evidencias(datos)
+
+with tab_armonizacion:
+    from ignis_armonizacion_externa import mostrar_armonizacion_externa
+    mostrar_armonizacion_externa(datos)
+    from ignis_calendario_armonizado import construir_calendario, crear_informe_final_pdf, mostrar_calendario_armonizado
+    st.divider()
+    st.header('Informe final IGNIS UY · objetivo NASA')
+    st.write('Documento de cierre: calendario conjunto, metodología, patrones disponibles, contraste histórico y matriz de verificación con limitaciones explícitas.')
+    st.caption('Se utiliza la región seleccionada en Fase 2 y la grilla de 1 km para mantener una configuración reproducible en el informe.')
+    try:
+        from ignis_armonizacion_externa import construir_correspondencias_historicas
+        resumen_historico, _ = construir_correspondencias_historicas()
+        diario_final, _ = construir_calendario(region_filtrada, 1.0)
+        informe_final = crear_informe_final_pdf(diario_final, resumen_historico, None, nombre_caso.strip() or 'Área seleccionada', 1.0)
+        st.download_button('Descargar informe final NASA - IGNIS UY (PDF)', informe_final, 'IGNIS_UY_informe_final_NASA.pdf', 'application/pdf', key='fase8_pdf_final')
+    except Exception as exc:
+        st.error(f'No fue posible generar el informe final: {exc}')
