@@ -6,6 +6,7 @@ from streamlit_folium import st_folium
 from io import BytesIO
 import zipfile
 from datetime import timedelta
+from departamentos_uruguay import DEPARTAMENTOS_URUGUAY
 
 st.set_page_config(
     page_title="NASA MODIS–VIIRS",
@@ -63,6 +64,21 @@ def identificar_producto(nombre):
     if "m-c61" in nombre or "modis" in nombre:
         return "MODIS"
     return "Sin identificar"
+
+
+def aplicar_departamento_seleccionado():
+    coordenadas = DEPARTAMENTOS_URUGUAY.get(
+        st.session_state["fase2b_departamento"]
+    )
+    if coordenadas is None:
+        return
+    (
+        st.session_state["fase2b_lat_min"],
+        st.session_state["fase2b_lat_max"],
+        st.session_state["fase2b_lon_min"],
+        st.session_state["fase2b_lon_max"],
+    ) = coordenadas
+
 
 if archivos:
     tablas = []
@@ -325,6 +341,17 @@ if archivos:
 
     st.caption("Definí el área dentro del recorte aproximado de Uruguay. "
                "Podés estudiar un departamento o una zona más pequeña.")
+    st.selectbox(
+        "Departamento de Uruguay",
+        ["Personalizada"] + list(DEPARTAMENTOS_URUGUAY),
+        key="fase2b_departamento",
+        on_change=aplicar_departamento_seleccionado,
+        help="Al elegir un departamento se cargan coordenadas aproximadas, que puedes editar.",
+    )
+    st.caption(
+        "Las coordenadas departamentales son BBOX aproximados; puedes modificarlas "
+        "manualmente en los campos siguientes."
+    )
     nombre_caso = st.text_input(
         "Nombre del área o caso de estudio",
         value="Área seleccionada de Uruguay",
@@ -332,17 +359,29 @@ if archivos:
     )
     min_lat_d, max_lat_d = float(datos.latitude.min()), float(datos.latitude.max())
     min_lon_d, max_lon_d = float(datos.longitude.min()), float(datos.longitude.max())
+    st.session_state.setdefault(
+        "fase2b_lat_min", max(-35.2, min_lat_d - 0.01)
+    )
+    st.session_state.setdefault(
+        "fase2b_lat_max", min(-30.0, max_lat_d + 0.01)
+    )
+    st.session_state.setdefault(
+        "fase2b_lon_min", max(-58.6, min_lon_d - 0.01)
+    )
+    st.session_state.setdefault(
+        "fase2b_lon_max", min(-53.0, max_lon_d + 0.01)
+    )
     lat_min = st.number_input("Latitud mínima", min_value=-35.2,
-                              max_value=-30.0, value=max(-35.2, min_lat_d - 0.01),
+                              max_value=-30.0, key="fase2b_lat_min",
                               format="%.4f")
     lat_max = st.number_input("Latitud máxima", min_value=-35.2,
-                              max_value=-30.0, value=min(-30.0, max_lat_d + 0.01),
+                              max_value=-30.0, key="fase2b_lat_max",
                               format="%.4f")
     lon_min = st.number_input("Longitud mínima", min_value=-58.6,
-                              max_value=-53.0, value=max(-58.6, min_lon_d - 0.01),
+                              max_value=-53.0, key="fase2b_lon_min",
                               format="%.4f")
     lon_max = st.number_input("Longitud máxima", min_value=-58.6,
-                              max_value=-53.0, value=min(-53.0, max_lon_d + 0.01),
+                              max_value=-53.0, key="fase2b_lon_max",
                               format="%.4f")
     if lat_min >= lat_max or lon_min >= lon_max:
         st.error("El rango geográfico no es válido.")
