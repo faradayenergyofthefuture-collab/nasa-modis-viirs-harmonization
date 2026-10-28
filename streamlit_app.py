@@ -14,20 +14,173 @@ st.set_page_config(
     layout="wide"
 )
 
-# Identidad visual IGNIS: portada únicamente
+st.markdown(
+    """
+    <style>
+    :root {
+        --ignis-forest: #173f35;
+        --ignis-forest-dark: #102f29;
+        --ignis-accent: #e8794f;
+        --ignis-ink: #20332d;
+        --ignis-muted: #63736d;
+        --ignis-line: #dce5df;
+        --ignis-paper: #f5f8f5;
+    }
+    [data-testid="stAppViewContainer"] {
+        background: var(--ignis-paper);
+        color: var(--ignis-ink);
+    }
+    [data-testid="stHeader"] { background: transparent; }
+    [data-testid="stMainBlockContainer"] {
+        max-width: 1500px;
+        padding-top: 2rem;
+        padding-bottom: 4rem;
+    }
+    [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stMarkdownContainer"] h3 {
+        color: var(--ignis-forest-dark);
+        letter-spacing: -0.02em;
+    }
+    [data-testid="stMarkdownContainer"] h2 {
+        padding-bottom: 0.45rem;
+        border-bottom: 1px solid var(--ignis-line);
+    }
+    [data-testid="stTabs"] [role="tablist"] {
+        gap: 0.35rem;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--ignis-line);
+        scrollbar-width: thin;
+    }
+    [data-testid="stTabs"] button[role="tab"] {
+        flex: 0 0 auto;
+        min-height: 3rem;
+        padding: 0.65rem 0.9rem;
+        border-radius: 0.55rem 0.55rem 0 0;
+        color: var(--ignis-muted);
+        font-weight: 650;
+        white-space: nowrap;
+    }
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: var(--ignis-forest-dark);
+        background: #e8f0eb;
+        border-bottom: 3px solid var(--ignis-accent);
+    }
+    [data-testid="stMetric"] {
+        min-height: 7rem;
+        padding: 1rem 1.15rem;
+        background: #fff;
+        border: 1px solid var(--ignis-line);
+        border-top: 3px solid #8eaa99;
+        border-radius: 0.7rem;
+        box-shadow: 0 3px 12px rgba(23, 63, 53, 0.045);
+    }
+    [data-testid="stMetricLabel"] {
+        color: var(--ignis-muted);
+        font-weight: 600;
+    }
+    [data-testid="stMetricValue"] {
+        color: var(--ignis-forest-dark);
+        font-weight: 750;
+    }
+    [data-testid="stDataFrame"],
+    [data-testid="stTable"] {
+        overflow: hidden;
+        border: 1px solid var(--ignis-line);
+        border-radius: 0.65rem;
+    }
+    [data-testid="stFileUploader"] section {
+        background: #fff;
+        border: 1px dashed #9cb3a5;
+        border-radius: 0.75rem;
+    }
+    [data-testid="stTextInput"] input,
+    [data-testid="stNumberInput"] input,
+    [data-testid="stSelectbox"] [data-baseweb="select"] > div,
+    [data-testid="stDateInput"] input {
+        border-color: var(--ignis-line);
+        border-radius: 0.5rem;
+    }
+    [data-testid="stExpander"] {
+        background: #fff;
+        border: 1px solid var(--ignis-line);
+        border-radius: 0.65rem;
+    }
+    div[data-testid="stButton"] > button,
+    div[data-testid="stDownloadButton"] > button {
+        border-radius: 0.5rem;
+        font-weight: 650;
+        transition: border-color 120ms ease, background 120ms ease;
+    }
+    div[data-testid="stButton"] > button[kind="primary"] {
+        background: var(--ignis-forest);
+        border-color: var(--ignis-forest);
+    }
+    div[data-testid="stButton"] > button[kind="primary"]:hover {
+        background: var(--ignis-forest-dark);
+        border-color: var(--ignis-forest-dark);
+    }
+    .ignis-eyebrow {
+        margin-bottom: 0.4rem;
+        color: var(--ignis-accent);
+        font-size: 0.76rem;
+        font-weight: 750;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+    .ignis-title {
+        color: var(--ignis-forest-dark);
+        font-size: clamp(1.7rem, 3vw, 2.45rem);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.12;
+    }
+    .ignis-subtitle {
+        margin-top: 0.55rem;
+        color: var(--ignis-muted);
+        font-size: 1rem;
+        line-height: 1.55;
+    }
+    @media (max-width: 640px) {
+        [data-testid="stMainBlockContainer"] {
+            padding: 1rem 0.8rem 2rem;
+        }
+        [data-testid="stTabs"] button[role="tab"] {
+            min-height: 2.7rem;
+            padding: 0.5rem 0.7rem;
+        }
+        [data-testid="stMetric"] {
+            min-height: 6rem;
+            padding: 0.8rem;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 from pathlib import Path
 logo_ignis = Path(__file__).resolve().parent / "logo_ignis.png"
-if logo_ignis.exists():
-    _, columna_logo, _ = st.columns([2, 1, 2])
-    with columna_logo:
-        st.image(str(logo_ignis), use_container_width=True)
-    st.markdown('**IGNIS — Equipo del proyecto**')
-
-st.title("🛰️ Armonización MODIS–VIIRS")
-st.subheader("NASA Space Apps Challenge 2026")
+with st.container(border=True):
+    columna_logo, columna_titulo = st.columns([1, 5], vertical_alignment="center")
+    if logo_ignis.exists():
+        with columna_logo:
+            st.image(str(logo_ignis), width=140)
+    with columna_titulo:
+        st.markdown(
+            """
+            <div class="ignis-eyebrow">IGNIS · NASA Space Apps Challenge 2026</div>
+            <div class="ignis-title">Armonización MODIS–VIIRS</div>
+            <div class="ignis-subtitle">
+                Observatorio de actividad térmica satelital · Uruguay
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 st.info(
-    "Prototipo exploratorio de detecciones térmicas. "
-    "Una detección satelital no confirma por sí sola un incendio."
+    "Análisis exploratorio de detecciones térmicas: "
+    "una detección satelital no confirma por sí sola un incendio."
 )
 
 archivos = st.file_uploader(
