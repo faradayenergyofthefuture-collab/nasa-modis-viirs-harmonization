@@ -1146,13 +1146,18 @@ with tab_resultados:
     base_fase3 = base_fase3.dropna(subset=["fecha_hora_utc"])
 
     if base_fase3.empty:
-        st.warning("No hay registros con fecha válida en la región seleccionada.")
-        st.stop()
+        st.warning("No hay detecciones con fecha válida dentro del recorte seleccionado. "
+                   "Las demás fases siguen disponibles; probá otro recorte o período.")
+        # No detener toda la aplicación: la biblioteca, las evidencias y los
+        # informes históricos deben seguir accesibles aunque el recorte esté vacío.
 
     fecha_min = base_fase3["fecha_hora_utc"].min()
     fecha_max = base_fase3["fecha_hora_utc"].max()
-    st.write(f"Período observado en los datos filtrados (UTC): "
-             f"{fecha_min:%d/%m/%Y %H:%M} a {fecha_max:%d/%m/%Y %H:%M}.")
+    if not base_fase3.empty:
+        st.write(f"Período observado en los datos filtrados (UTC): "
+                 f"{fecha_min:%d/%m/%Y %H:%M} a {fecha_max:%d/%m/%Y %H:%M}.")
+    else:
+        st.caption("Período regional observado: sin detecciones en los archivos cargados.")
     st.caption("Este período corresponde a registros presentes en los archivos; "
                "no necesariamente al período completo solicitado a NASA FIRMS.")
 
