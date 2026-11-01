@@ -368,25 +368,69 @@ with tab_analisis:
 
         st.caption("Definí el área dentro del recorte aproximado de Uruguay. "
                    "Podés estudiar un departamento o una zona más pequeña.")
-        nombre_caso = st.text_input(
-            "Nombre del área o caso de estudio",
-            value="Área seleccionada de Uruguay",
-            key="nombre_caso_uy"
-        )
+        # Recortes documentados en la guía cartográfica IGNIS (25/10/2026).
+        # Son rectángulos de estudio, NO límites administrativos oficiales.
+        casos_igm = {
+            "Durazno": (-33.460, -33.280, -56.750, -56.440),
+            "Cerro del Toro (Maldonado)": (-34.880, -34.840, -55.280, -55.230),
+            "Treinta y Tres": (-32.985, -32.879, -54.069, -53.920),
+            "Canelones (zona de Atlántida)": (-34.788, -34.724, -55.890, -55.810),
+            "Lavalleja": (-34.116, -34.044, -54.940, -54.842),
+            "Artigas": (-30.505, -30.443, -56.576, -56.499),
+        }
+
         min_lat_d, max_lat_d = float(datos.latitude.min()), float(datos.latitude.max())
         min_lon_d, max_lon_d = float(datos.longitude.min()), float(datos.longitude.max())
+        valores_iniciales = {
+            "ignis_lat_min": max(-35.2, min_lat_d - 0.01),
+            "ignis_lat_max": min(-30.0, max_lat_d + 0.01),
+            "ignis_lon_min": max(-58.6, min_lon_d - 0.01),
+            "ignis_lon_max": min(-53.0, max_lon_d + 0.01),
+        }
+        for clave, valor in valores_iniciales.items():
+            if clave not in st.session_state:
+                st.session_state[clave] = float(valor)
+        if "nombre_caso_uy" not in st.session_state:
+            st.session_state["nombre_caso_uy"] = "Área seleccionada de Uruguay"
+
+        def aplicar_caso_igm():
+            caso = st.session_state["ignis_caso_predefinido"]
+            if caso in casos_igm:
+                limites = casos_igm[caso]
+                st.session_state["nombre_caso_uy"] = caso
+                for clave, valor in zip(
+                    ("ignis_lat_min", "ignis_lat_max", "ignis_lon_min", "ignis_lon_max"),
+                    limites,
+                ):
+                    st.session_state[clave] = float(valor)
+            # En modo manual se conservan los valores actuales para editarlos.
+
+        st.selectbox(
+            "Seleccionar caso geográfico (carga automática)",
+            ["Personalizada (ingreso manual)", *casos_igm.keys()],
+            key="ignis_caso_predefinido",
+            on_change=aplicar_caso_igm,
+        )
+        nombre_caso = st.text_input(
+            "Nombre del área o caso de estudio", key="nombre_caso_uy"
+        )
         lat_min = st.number_input("Latitud mínima", min_value=-35.2,
-                                  max_value=-30.0, value=max(-35.2, min_lat_d - 0.01),
+                                  max_value=-30.0, key="ignis_lat_min",
                                   format="%.4f")
         lat_max = st.number_input("Latitud máxima", min_value=-35.2,
-                                  max_value=-30.0, value=min(-30.0, max_lat_d + 0.01),
+                                  max_value=-30.0, key="ignis_lat_max",
                                   format="%.4f")
         lon_min = st.number_input("Longitud mínima", min_value=-58.6,
-                                  max_value=-53.0, value=max(-58.6, min_lon_d - 0.01),
+                                  max_value=-53.0, key="ignis_lon_min",
                                   format="%.4f")
         lon_max = st.number_input("Longitud máxima", min_value=-58.6,
-                                  max_value=-53.0, value=min(-53.0, max_lon_d + 0.01),
+                                  max_value=-53.0, key="ignis_lon_max",
                                   format="%.4f")
+        st.caption(
+            "Los seis casos son recortes de análisis documentados con apoyo visual "
+            "del IGM; no representan límites departamentales certificados. "
+            "Podés ajustar manualmente las coordenadas cuando lo necesites."
+        )
         if lat_min >= lat_max or lon_min >= lon_max:
             st.error("El rango geográfico no es válido.")
             st.stop()
